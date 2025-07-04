@@ -159,14 +159,14 @@ resumen = f"""
 </body></html>
 """
 
-        st.download_button(
+    st.download_button(
             label="📄 Descargar Informe",
             data=resumen,
             file_name="informe_gastos.html",
             mime="text/html"
         )
 
-        st.download_button(
+    st.download_button(
             label="📄 Descargar Informe",
             data=resumen,
             file_name="informe_gastos.md",
