@@ -1,4 +1,3 @@
-# utils/alerts.py
 import pandas as pd
 
 def calcular_alertas(df, meses):
