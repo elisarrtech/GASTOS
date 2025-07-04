@@ -10,7 +10,7 @@ st.title("📊 Dashboard de Gastos Mensuales")
 def cargar_datos():
     try:
         # Leer el archivo sin header
-        df = pd.read_excel("data/HOJA DE GASTOS.xlsx", header=None, engine='openpyxl')
+       df = pd.read_csv("data/hoja_ejemplo_gastos.csv")
 
         # Limpiar filas completamente vacías
         df = df.dropna(how='all').reset_index(drop=True)
