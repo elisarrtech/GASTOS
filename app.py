@@ -9,12 +9,8 @@ st.title("📊 Dashboard de Gastos Mensuales")
 @st.cache_data
 def cargar_datos():
     try:
-        # Leer el archivo CSV
         df = pd.read_csv("data/hoja_ejemplo_gastos.csv")
-
-        # Limpiar filas completamente vacías
         df = df.dropna(how='all').reset_index(drop=True)
-
         return df
 
     except Exception as e:
@@ -30,6 +26,10 @@ if df is not None:
     # Mostrar resumen rápido
     st.markdown("### 📋 Resumen General")
     st.write(f"- **Total de conceptos:** {len(df)}")
+
+    # Mostrar DataFrame completo para depuración
+    st.markdown("### 📄 Datos cargados")
+    st.dataframe(df, use_container_width=True)
 
     # Mostrar datos por categoría
     if 'Categoría' in df.columns:
