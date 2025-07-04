@@ -132,7 +132,8 @@ with tab1:
 
 ## Detalle de Gastos
 
-{edited_df[['Categoría', 'Concepto', 'Mes', 'Monto', 'Presupuesto', 'Estado', 'Variación (%)']].to_markdown(index=False)}
+{edited_df[['Categoría', 'Concepto', 'Mes', 'Monto', 'Presupuesto', 'Estado', 'Variación (%)']].to_string(index=False)}
+
 
 ---
 _Sugerencia:_ Monitorea mensualmente los conceptos con alta variación y considera acciones de ajuste presupuestal.
