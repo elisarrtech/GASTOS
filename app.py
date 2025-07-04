@@ -119,15 +119,17 @@ with tab1:
     st.subheader("🚨 Alertas de Presupuesto")
     alertas_df = calcular_alertas(edited_df)
     if not alertas_df.empty:
-        st.warning("Hay conceptos que superan su presupuesto")
-        st.dataframe(alertas_df)
+    st.warning("Hay conceptos que superan su presupuesto")
+    st.dataframe(alertas_df)
 
-        enviar_alerta_email(
-            destinatario=os.getenv("EMAIL_TO"),
-            asunto="🚨 Alerta de Presupuesto",
-            mensaje="Hay conceptos que han superado su presupuesto asignado. Revisa el dashboard."
-        )
-        st.info("📧 Alerta enviada por correo electrónico")
+    # enviar_alerta_email(
+    #     destinatario=os.getenv("EMAIL_TO"),
+    #     asunto="🚨 Alerta de Presupuesto",
+    #     mensaje="Hay conceptos que han superado su presupuesto asignado. Revisa el dashboard."
+    # )
+
+    st.info("⚠️ Alerta detectada. (Envío de email desactivado temporalmente)")
+
     else:
         st.success("Todos los conceptos están dentro del presupuesto")
 
