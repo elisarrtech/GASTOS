@@ -141,19 +141,16 @@ with tab1:
     st.download_button("📥 Descargar CSV", data=edited_df.to_csv(index=False), file_name="gastos_exportados.csv")
 
 
+# [Código original sin cambios hasta "Evolución de Gastos por Mes"]
 
 with tab2:
-  with tab2:
     st.subheader("📈 Histórico de Gastos por Mes")
 
     resumen_mensual = df.groupby("Mes")["Monto"].sum().reset_index()
     st.dataframe(resumen_mensual, use_container_width=True)
 
     fig_hist = px.line(resumen_mensual, x="Mes", y="Monto", title="Evolución de Gastos por Mes", markers=True)
-    st.plotly_chart(fig_hist, use_container_width=True)
-
-
-# [Código original sin cambios hasta "Evolución de Gastos por Mes"]
+    st.plotly_chart(fig_hist, use_container_width=True, key="hist_grafico"
 
     st.divider()
 
@@ -168,5 +165,5 @@ with tab2:
         barmode="group",
         title="Comparativo Mensual: Gastado vs Presupuesto"
     )
-    st.plotly_chart(fig_comp, use_container_width=True)
+    st.plotly_chart(fig_comp, use_container_width=True, key="comparativo_grafico"
 
