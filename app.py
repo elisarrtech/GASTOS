@@ -51,6 +51,8 @@ with st.sidebar:
     variacion_filtro = st.selectbox("Variación", ["Todos", "Positiva", "Negativa"])
 
     if st.button("🔄 Restablecer Filtros"):
+        st.session_state.clear()
+        st.experimental_rerun()
         st.experimental_rerun()
 
 # === TABS ===
