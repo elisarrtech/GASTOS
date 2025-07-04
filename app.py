@@ -1,61 +1,14 @@
-import streamlit as st
-import pandas as pd
-import plotly.express as px
-import smtplib
-from email.message import EmailMessage
-import os
-
-st.set_page_config(page_title="Dashboard de Gastos", layout="wide")
-
-# === ESTILOS PERSONALIZADOS ===
-st.markdown("""
-<style>
-    body {
-        background-color: #f9f9f9;
-        font-family: 'Segoe UI', sans-serif;
-    }
-    h1, h2, h3 {
-        color: #2c3e50;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-def enviar_alerta_email(destinatario, asunto, mensaje):
-    email = EmailMessage()
-    email["From"] = os.getenv("EMAIL_USER")
-    email["To"] = destinatario
-    email["Subject"] = asunto
-    email.set_content(mensaje)
-
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-        smtp.login(os.getenv("EMAIL_USER"), os.getenv("EMAIL_PASSWORD"))
-        smtp.send_message(email)
-
-# === CARGA DE DATOS ===
-@st.cache_data
-def cargar_datos():
-    df = pd.read_csv("data/gastos_mensuales.csv")
-    df["Monto"] = df["Monto"].replace('[\$,]', '', regex=True).astype(float)
-    df["Presupuesto"] = df["Presupuesto"].replace('[\$,]', '', regex=True).astype(float)
-    return df
-
-def calcular_alertas(df):
-    alertas = df.groupby("Concepto").agg({"Monto": "sum", "Presupuesto": "max"}).reset_index()
-    alertas = alertas[alertas["Monto"] > alertas["Presupuesto"]]
-    return alertas
-
-def colorear_estado(val):
-    if val == "PAGADO":
-        return 'background-color: #d4edda; color: #155724; text-align: center'
-    elif val == "NO PAGADO":
-        return 'background-color: #f8d7da; color: #721c24; text-align: center'
-    else:
-        return ''
+# === CALCULO DE VARIACION ===
+def calcular_variacion(row):
+    if row['Presupuesto'] == 0:
+        return 0
+    return round(((row['Monto'] - row['Presupuesto']) / row['Presupuesto']) * 100, 2)
 
 # === INTERFAZ ===
 st.title("📊 Dashboard de Gastos Mensuales")
 
 df = cargar_datos()
+df["Variación (%)"] = df.apply(calcular_variacion, axis=1)
 
 with st.sidebar:
     st.header("Filtros")
