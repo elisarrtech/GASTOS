@@ -18,14 +18,6 @@ st.markdown("""
         border-radius: 8px;
         padding: 0.4em 0.8em;
     }
-    .estado-pagado {
-        background-color: #d4edda;
-        color: #155724;
-    }
-    .estado-no-pagado {
-        background-color: #f8d7da;
-        color: #721c24;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -37,9 +29,9 @@ def limpiar_monto(valor):
         return 0.0
 
 def colorear_estado(val):
-    if val == "Pagado":
+    if val == "PAGADO":
         return 'background-color: #d4edda; color: #155724'
-    elif val == "Sin pagar":
+    elif val == "NO PAGADO":
         return 'background-color: #f8d7da; color: #721c24'
     else:
         return ''
@@ -48,13 +40,11 @@ def colorear_estado(val):
 @st.cache_data
 def cargar_datos():
     df = pd.read_csv("data/gastos_mensuales.csv")
-    if "Estado" not in df.columns:
-        df["Estado"] = "Sin pagar"
     return df
 
 df = cargar_datos()
 
-# Meses y limpieza
+# Limpiar montos
 meses = ["Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 for mes in meses:
     df[mes] = df[mes].apply(limpiar_monto)
@@ -76,7 +66,7 @@ if categoria_filtro != "Todas":
 if concepto_busqueda:
     df_filtrado = df_filtrado[df_filtrado["Concepto"].str.contains(concepto_busqueda, case=False, na=False)]
 
-# === TABLA EDITABLE CON ESTADO INTEGRADO ===
+# === TABLA EDITABLE ===
 st.subheader("📋 Registros Filtrados")
 edited_df = st.data_editor(
     df_filtrado,
@@ -84,7 +74,7 @@ edited_df = st.data_editor(
     num_rows="dynamic",
     column_config={
         "Estado": st.column_config.SelectboxColumn(
-            options=["Pagado", "Sin pagar"],
+            options=["PAGADO", "NO PAGADO"],
             required=True
         )
     },
@@ -125,33 +115,36 @@ if not edited_df.empty:
     fig_pie = px.pie(grafico_categoria, names="Categoría", values="Total", title="Distribución por Categoría")
     st.plotly_chart(fig_pie, use_container_width=True)
 
-  # === ESTADO de PAGOS - BARRA DE PROGRESO ===
-st.subheader("📊 Estado de Pagos")
+    # === ESTADO DE PAGOS - BARRA DE PROGRESO ===
+    total_pagado = len(edited_df[edited_df["Estado"] == "PAGADO"])
+    total_saldo = len(edited_df[edited_df["Estado"] == "NO PAGADO"])
+    total_conceptos_estado = total_pagado + total_saldo
 
-total_pagado = len(edited_df[edited_df["Estado"] == "Pagado"])
-total_saldo = len(edited_df[edited_df["Estado"] == "Sin pagar"])
-total_conceptos_estado = total_pagado + total_saldo
-
-if total_conceptos_estado > 0:
-    porcentaje_pagado = total_pagado / total_conceptos_estado
-    st.progress(porcentaje_pagado)
-    st.caption(f"{total_pagado} de {total_conceptos_estado} conceptos pagados ({int(porcentaje_pagado * 100)}%)")
-else:
-    st.info("⚠️ No hay registros para mostrar estado de pagos.")
+    st.subheader("📊 Estado de Pagos")
+    if total_conceptos_estado > 0:
+        porcentaje_pagado = total_pagado / total_conceptos_estado
+        st.progress(porcentaje_pagado)
+        st.caption(f"{total_pagado} de {total_conceptos_estado} conceptos pagados ({int(porcentaje_pagado * 100)}%)")
+    else:
+        st.info("⚠️ No hay registros para mostrar estado de pagos.")
 
     # === TABLA CON ESTILO DE ESTADO ===
     styled_df = edited_df.style.applymap(colorear_estado, subset=["Estado"])
     st.dataframe(styled_df, use_container_width=True)
 
     # === ACTUALIZAR ESTADO INLINE EN CADA FILA ===
+    st.subheader("🔄 Actualiza el estado de cada gasto")
     for index, row in edited_df.iterrows():
         col1, col2 = st.columns([3, 1])
         with col1:
             st.markdown(f"**{row['Concepto']}**")
         with col2:
-            estado_actual = row.get("Estado", "Sin pagar")
-            nuevo_estado = "Pagado" if estado_actual == "Sin pagar" else "Sin pagar"
+            estado_actual = row.get("Estado", "NO PAGADO")
+            nuevo_estado = "PAGADO" if estado_actual == "NO PAGADO" else "NO PAGADO"
             if st.button(f"{estado_actual} ➤ {nuevo_estado}", key=f"toggle_{index}"):
                 edited_df.at[index, "Estado"] = nuevo_estado
                 edited_df.to_csv("data/gastos_mensuales.csv", index=False)
                 st.rerun()
+
+else:
+    st.warning("⚠️ No hay datos que coincidan con los filtros aplicados.")
