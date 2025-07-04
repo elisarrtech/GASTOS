@@ -9,6 +9,9 @@ from utils.styles import colorear_estado
 from utils.alerts import calcular_alertas
 from utils.export_pdf import generar_pdf
 
+import plotly.io as pio
+pio.kaleido.scope.default_format = "png"
+
 st.set_page_config(page_title="Dashboard de Gastos", layout="wide")
 
 # === FUNCIONES DE ALERTAS POR EMAIL (SMTP SEGURO) ===
@@ -103,6 +106,10 @@ with tab1:
     fig_pie = px.pie(gastos_por_categoria, names="Categoría", values="Total", title="Distribución por Categoría")
     st.plotly_chart(fig_pie, use_container_width=True)
 
+    # Guardar gráficos como imágenes
+    fig_bar.write_image("data/fig_bar.png")
+    fig_pie.write_image("data/fig_pie.png")
+
     st.divider()
     st.subheader("🚨 Alertas de Presupuesto")
 
@@ -131,6 +138,12 @@ with tab1:
     <p>Total pagado: ${total_pagado:,.2f}</p>
     <p>Pendiente por pagar: ${total_no_pagado:,.2f}</p>
     <p>Promedio mensual: ${promedio_mensual:,.2f}</p>
+    <br>
+    <h2>Gráfico de Gastos por Mes</h2>
+    <img src='data/fig_bar.png' width='600'>
+    <br>
+    <h2>Distribución por Categoría</h2>
+    <img src='data/fig_pie.png' width='600'>
     """
 
     if st.button("📄 Generar PDF"):
