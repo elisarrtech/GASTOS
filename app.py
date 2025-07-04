@@ -57,26 +57,6 @@ with st.sidebar:
 
 
 
-# === BOTÓN DE INFORMES ===
-
-with st.expander("📄 Generar Informes PDF"):
-    st.write("Genera un informe con el resumen actual.")
-
-    resumen = f"""
-    Informe de Gastos
-
-    Total Anual: ${total_anual:,.2f}
-    Total Pagado: ${total_pagado:,.2f}
-    Total No Pagado: ${total_no_pagado:,.2f}
-    """
-
-    st.download_button(
-        label="📄 Descargar Informe",
-        data=resumen,
-        file_name="informe_gastos.txt",
-        mime="text/plain"
-    )
-
 # === TABS ===
 tab1, tab2 = st.tabs(["Dashboard Principal", "Histórico Mensual"])
 
@@ -135,6 +115,21 @@ with tab1:
     col1.metric("💸 Total Anual", f"${total_anual:,.2f}")
     col2.metric("✅ Pagado", f"${total_pagado:,.2f}")
     col3.metric("⏳ No Pagado", f"${total_no_pagado:,.2f}")
+
+    with st.expander("📄 Generar Informes"):
+        resumen = f"""
+        Informe de Gastos
+
+        Total Anual: ${total_anual:,.2f}
+        Total Pagado: ${total_pagado:,.2f}
+        Total No Pagado: ${total_no_pagado:,.2f}
+        """
+        st.download_button(
+            label="📄 Descargar Informe",
+            data=resumen,
+            file_name="informe_gastos.txt",
+            mime="text/plain"
+        )
 
     st.divider()
 
