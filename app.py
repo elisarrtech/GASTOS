@@ -57,6 +57,26 @@ with st.sidebar:
 
 
 
+# === BOTÓN DE INFORMES ===
+
+with st.expander("📄 Generar Informes PDF"):
+    st.write("Genera un informe con el resumen actual.")
+
+    resumen = f"""
+    Informe de Gastos
+
+    Total Anual: ${total_anual:,.2f}
+    Total Pagado: ${total_pagado:,.2f}
+    Total No Pagado: ${total_no_pagado:,.2f}
+    """
+
+    st.download_button(
+        label="📄 Descargar Informe",
+        data=resumen,
+        file_name="informe_gastos.txt",
+        mime="text/plain"
+    )
+
 # === TABS ===
 tab1, tab2 = st.tabs(["Dashboard Principal", "Histórico Mensual"])
 
@@ -158,13 +178,7 @@ with tab1:
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         edited_df.to_excel(writer, index=False, sheet_name='Gastos')
-  st.download_button(
-    label="📥 Exportar a Excel",
-    data=output.getvalue(),
-    file_name="gastos_exportados.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-)
-
+    st.download_button("📥 Exportar a Excel", data=output.getvalue(), file_name="gastos_exportados.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"), file_name="gastos_exportados.csv")
 
 with tab2:
     st.subheader("📈 Histórico de Gastos por Mes")
