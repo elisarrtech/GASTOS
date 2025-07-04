@@ -118,7 +118,16 @@ with tab1:
 
     with st.expander("📄 Generar Informes"):
         resumen = f"""
-<html><body>
+<html><head>
+<style>
+    body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
+    h1, h2 { color: #2c3e50; }
+    ul { margin-left: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background-color: #f5f5f5; }
+</style>
+</head><body>
 <h1>Informe de Gastos Mensuales</h1>
 
 <h2>Indicadores Clave</h2>
