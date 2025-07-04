@@ -9,37 +9,13 @@ st.title("📊 Dashboard de Gastos Mensuales")
 @st.cache_data
 def cargar_datos():
     try:
-        # Leer el archivo sin header
+        # Leer el archivo CSV
         df = pd.read_csv("data/hoja_ejemplo_gastos.csv")
 
         # Limpiar filas completamente vacías
         df = df.dropna(how='all').reset_index(drop=True)
 
-        # Detectar categorías y construir DataFrame final
-        categoria_actual = None
-        registros = []
-
-        for idx, row in df.iterrows():
-            val = str(row[0]).strip() if not pd.isna(row[0]) else ""
-
-            if val and len(val) < 50 and not val.startswith("Unnamed") and not val.isdigit():
-                categoria_actual = val
-                continue
-
-            if categoria_actual and len(row) >= 2:
-                concepto = str(row[0]).strip() if not pd.isna(row[0]) else ""
-                if concepto == "":
-                    continue
-
-                # Asegurar que siempre haya 9 columnas (Concepto + 8 meses)
-                data = [categoria_actual, concepto] + [row[i] if i < len(row) else "" for i in range(1, 9)]
-                registros.append(data)
-
-        # Crear nuevo DataFrame con estructura limpia
-        columnas = ['Categoría', 'Concepto', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
-        df_limpio = pd.DataFrame(registros, columns=columnas)
-
-        return df_limpio
+        return df
 
     except Exception as e:
         st.error(f"Error al cargar los datos: {e}")
@@ -53,13 +29,14 @@ if df is not None:
 
     # Mostrar resumen rápido
     st.markdown("### 📋 Resumen General")
-    total_categorias = df['Categoría'].nunique()
-    total_conceptos = len(df)
-    st.write(f"- **Total de categorías:** {total_categorias}")
-    st.write(f"- **Total de conceptos:** {total_conceptos}")
+    st.write(f"- **Total de conceptos:** {len(df)}")
 
     # Mostrar datos por categoría
-    categorias_unicas = df['Categoría'].unique()
+    if 'Categoría' in df.columns:
+        categorias_unicas = df['Categoría'].unique()
+    else:
+        st.error("No se encontró la columna 'Categoría'. Verifica el archivo.")
+        st.stop()
 
     for categoria in categorias_unicas:
         with st.expander(f"📁 {categoria}", expanded=False):
