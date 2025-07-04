@@ -54,7 +54,11 @@ with st.sidebar:
     mes_filtro = st.selectbox("Mes", ["Todos"] + sorted(df["Mes"].unique()))
     estado_filtro = st.selectbox("Estado", ["Todos"] + sorted(df["Estado"].unique()))
     quincena_filtro = st.selectbox("Quincena", ["Todas"] + sorted(df["Quincena"].unique()))
-    variacion_filtro = st.selectbox("Variación", ["Todos", "Positiva", "Negativa"])
+    variacionif st.button("🔄 Restablecer Filtros"):
+    st.session_state.clear()
+    st.success("✔️ Filtros restablecidos. Por favor recarga la página (F5 o Ctrl+R).")
+
+_filtro = st.selectbox("Variación", ["Todos", "Positiva", "Negativa"])
 
     if st.button("🔄 Restablecer Filtros"):
         st.session_state["__rerun__"] = True
