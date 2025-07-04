@@ -51,6 +51,8 @@ with st.sidebar:
     quincena_filtro = st.selectbox("Quincena", ["Todas"] + sorted(df["Quincena"].unique()))
     variacion_filtro = st.selectbox("Variación", ["Todos", "Positiva", "Negativa"])
 
+    busqueda_rapida = st.text_input("🔍 Búsqueda rápida por concepto")st.selectbox("Variación", ["Todos", "Positiva", "Negativa"])
+
 
 
 # === TABS ===
@@ -58,6 +60,10 @@ tab1, tab2 = st.tabs(["Dashboard Principal", "Histórico Mensual"])
 
 with tab1:
     df_filtrado = df.copy()
+
+    # Aplicar búsqueda rápida
+    if busqueda_rapida:
+        df_filtrado = df_filtrado[df_filtrado["Concepto"].str.contains(busqueda_rapida, case=False, na=False)]
 
     # Aplicar filtros avanzados
     if categoria_filtro != "Todas":
