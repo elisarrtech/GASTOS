@@ -4,13 +4,11 @@ import plotly.express as px
 import smtplib
 from email.message import EmailMessage
 import os
-
-# === IMPORTACIONES PERSONALIZADAS ===
 from utils.data_loader import cargar_datos, limpiar_monto
 from utils.styles import colorear_estado
 from utils.alerts import calcular_alertas
+from utils.export_pdf import generar_pdf
 
-# === CONFIGURACIÓN DE PÁGINA ===
 st.set_page_config(page_title="Dashboard de Gastos", layout="wide")
 
 # === FUNCIONES DE ALERTAS POR EMAIL (SMTP SEGURO) ===
@@ -25,7 +23,6 @@ def enviar_alerta_email(destinatario, asunto, mensaje):
         smtp.login(os.getenv("EMAIL_USER"), os.getenv("EMAIL_PASSWORD"))
         smtp.send_message(email)
 
-# === ESTILOS PERSONALIZADOS ===
 st.markdown("""
 <style>
     body {
@@ -38,33 +35,25 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# === CARGA DE DATOS ===
 df = cargar_datos("data/gastos_mensuales.csv")
-
-# Meses y limpieza
 meses = ["Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 for mes in meses:
     df[mes] = df[mes].apply(limpiar_monto)
 
-# === SIDEBAR - FILTROS ===
 with st.sidebar:
     st.header("🔍 Filtros")
     categoria_filtro = st.selectbox("Categoría", ["Todas"] + list(df["Categoría"].unique()))
     concepto_busqueda = st.text_input("Buscar Concepto")
 
-# Aplicar filtros
 df_filtrado = df.copy()
 if categoria_filtro != "Todas":
     df_filtrado = df_filtrado[df_filtrado["Categoría"] == categoria_filtro]
 if concepto_busqueda:
     df_filtrado = df_filtrado[df_filtrado["Concepto"].str.contains(concepto_busqueda, case=False, na=False)]
 
-# === PESTAÑAS PRINCIPALES ===
 tab1, tab2 = st.tabs(["📊 Dashboard Principal", "📈 Histórico Mensual"])
 
-# === TAB 1: DASHBOARD PRINCIPAL ===
 with tab1:
-
     st.markdown("<h1 style='text-align: center; color: #2c3e50;'>📊 Dashboard de Gastos Mensuales</h1>", unsafe_allow_html=True)
     st.caption("<p style='text-align: center; font-size: 1.1em;'>Monitorea, controla y analiza tus gastos de forma simple y visual.</p>", unsafe_allow_html=True)
 
@@ -92,7 +81,6 @@ with tab1:
 
     total_anual = edited_df[meses].sum().sum()
     promedio_mensual = total_anual / len(meses)
-    total_conceptos = len(edited_df)
     total_pagado = edited_df[edited_df["Estado"] == "PAGADO"][meses].sum().sum()
     total_no_pagado = edited_df[edited_df["Estado"] == "NO PAGADO"][meses].sum().sum()
 
@@ -103,8 +91,8 @@ with tab1:
     col4.metric("📅 Promedio Mensual", f"${promedio_mensual:,.2f}")
 
     st.divider()
-
     st.subheader("📈 Gastos por Mes")
+
     gastos_por_mes = edited_df[meses].sum().reset_index()
     gastos_por_mes.columns = ["Mes", "Total"]
     fig_bar = px.bar(gastos_por_mes, x="Mes", y="Total", title="Total por Mes", color="Mes")
@@ -116,32 +104,14 @@ with tab1:
     st.plotly_chart(fig_pie, use_container_width=True)
 
     st.divider()
-
     st.subheader("🚨 Alertas de Presupuesto")
+
     alertas_df = calcular_alertas(edited_df, meses)
 
     if not alertas_df.empty:
         st.warning("⚠️ ¡Hay conceptos que exceden su presupuesto!")
         st.dataframe(alertas_df, use_container_width=True)
 
-
-    st.subheader("🖨️ Exportar Dashboard a PDF")
-
-# Contenido HTML básico (puedes mejorar el estilo)
-html_content = f"""
-<h1>Resumen de Gastos</h1>
-<p>Total anual: ${total_anual:,.2f}</p>
-<p>Total pagado: ${total_pagado:,.2f}</p>
-<p>Pendiente por pagar: ${total_no_pagado:,.2f}</p>
-<p>Promedio mensual: ${promedio_mensual:,.2f}</p>
-"""
-
-if st.button("📄 Generar PDF"):
-    pdf_data = generar_pdf(html_content)
-    st.download_button(label="📥 Descargar PDF", data=pdf_data, file_name="resumen_gastos.pdf", mime="application/pdf")
-
-
-        # === ENVÍO AUTOMÁTICO DE ALERTA POR EMAIL ===
         enviar_alerta_email(
             destinatario=os.getenv("EMAIL_TO"),
             asunto="🚨 Alerta de Gastos Excedidos",
@@ -149,19 +119,33 @@ if st.button("📄 Generar PDF"):
         )
 
         st.info("📧 Alerta enviada por correo electrónico.")
-
     else:
         st.success("✅ Todos los conceptos están dentro del presupuesto.")
 
     st.divider()
+    st.subheader("🖨️ Exportar Dashboard a PDF")
 
+    html_content = f"""
+    <h1>Resumen de Gastos</h1>
+    <p>Total anual: ${total_anual:,.2f}</p>
+    <p>Total pagado: ${total_pagado:,.2f}</p>
+    <p>Pendiente por pagar: ${total_no_pagado:,.2f}</p>
+    <p>Promedio mensual: ${promedio_mensual:,.2f}</p>
+    """
+
+    if st.button("📄 Generar PDF"):
+        pdf_data = generar_pdf(html_content)
+        st.download_button(label="📥 Descargar PDF", data=pdf_data, file_name="resumen_gastos.pdf", mime="application/pdf")
+
+    st.divider()
     st.subheader("📄 Tabla con Estado Visual")
+
     styled_df = edited_df.style.applymap(colorear_estado, subset=["Estado"])
     st.dataframe(styled_df, use_container_width=True)
 
     st.divider()
-
     st.subheader("📤 Exportar Datos")
+
     st.download_button(
         label="📥 Descargar CSV",
         data=edited_df.to_csv(index=False),
@@ -171,7 +155,6 @@ if st.button("📄 Generar PDF"):
 
     st.divider()
 
-# === TAB 2: HISTÓRICO MENSUAL ===
 with tab2:
     st.markdown("## 📈 Histórico de Gastos por Mes")
 
@@ -184,5 +167,3 @@ with tab2:
     st.plotly_chart(fig_hist, use_container_width=True)
 
     st.divider()
-
-from utils.export_pdf import generar_pdf
