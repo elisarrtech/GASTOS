@@ -117,35 +117,30 @@ if not edited_df.empty:
     fig_pie = px.pie(grafico_categoria, names="Categoría", values="Total", title="Distribución por Categoría")
     st.plotly_chart(fig_pie, use_container_width=True)
 
-    # Mostrar tabla con estilo de estado
-    styled_df = edited_df.style.applymap(colorear_estado, subset=["Estado"])
-    st.subheader("📌 Estado de Pagos")
-    st.dataframe(styled_df)
+   # === ESTADO DE PAGOS - BARRA DE PROGRESO ===
+total_pagado = len(edited_df[edited_df["Estado"] == "Pagado"])
+total_conceptos = len(edited_df)
+porcentaje_pagado = total_pagado / total_conceptos if total_conceptos > 0 else 0
 
-    # Botones dinámicos para cambiar estado
-    st.subheader("🔄 Actualizar Estado")
-    for index, row in edited_df.iterrows():
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            st.text(row["Concepto"])
-        with col2:
-            estado_actual = row.get("Estado", "Sin pagar")
-            if st.button(f"{estado_actual} 🔄", key=f"toggle_{index}"):
-                nuevo_estado = "Pagado" if estado_actual == "Sin pagar" else "Sin pagar"
-                edited_df.at[index, "Estado"] = nuevo_estado
-                edited_df.to_csv("data/gastos_mensuales.csv", index=False)
-                st.rerun()
+st.subheader("📊 Progreso de Pagos")
+st.progress(porcentaje_pagado)
+st.caption(f"{total_pagado} de {total_conceptos} conceptos pagados ({int(porcentaje_pagado * 100)}%)")
 
-    # Gráfico de estado de pagos
-    st.subheader("📊 Resumen del Estado")
-    total_pagado = len(edited_df[edited_df["Estado"] == "Pagado"])
-    total_saldo = len(edited_df[edited_df["Estado"] == "Sin pagar"])
+# === TABLA CON ESTILO DE ESTADO ===
+st.subheader("📌 Estado de Gastos")
+styled_df = edited_df.style.applymap(colorear_estado, subset=["Estado"])
+st.dataframe(styled_df, use_container_width=True)
 
-    fig = px.pie(
-        pd.DataFrame({"Estado": ["Pagado", "Sin pagar"], "Cantidad": [total_pagado, total_saldo]}),
-        names="Estado",
-        values="Cantidad",
-        title="Estado de Pagos",
-        color_discrete_map={"Pagado": "green", "Sin pagar": "red"}
-    )
-    st.plotly_chart(fig, use_container_width=True)
+# === ACTUALIZAR ESTADO INLINE EN CADA FILA (opcional) ===
+st.subheader("🔄 Actualiza el estado de cada gasto")
+for index, row in edited_df.iterrows():
+    col1, col2, col3 = st.columns([3, 1, 1])
+    with col1:
+        st.markdown(f"**{row['Concepto']}**")
+    with col2:
+        estado_actual = row.get("Estado", "Sin pagar")
+        nuevo_estado = "Pagado" if estado_actual == "Sin pagar" else "Sin pagar"
+        if st.button(f"{estado_actual} ➤ {nuevo_estado}", key=f"toggle_{index}"):
+            edited_df.at[index, "Estado"] = nuevo_estado
+            edited_df.to_csv("data/gastos_mensuales.csv", index=False)
+            st.rerun()
