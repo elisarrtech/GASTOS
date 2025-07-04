@@ -1,77 +1,13 @@
-import streamlit as st
-import pandas as pd
-import plotly.express as px
-
-# === CONFIGURACIÓN ===
-st.set_page_config(page_title="Dashboard de Gastos", layout="wide")
-
-# === CARGA DE DATOS ===
-@st.cache_data
-def cargar_datos():
-    df = pd.read_csv("data/gastos_mensuales.csv")
-    meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
-    for mes in meses:
-        df[mes] = df[mes].replace('[\$,]', '', regex=True).astype(float)
-    df["Total"] = df[meses].sum(axis=1)
-    df["Variación (%)"] = round(((df["Total"] - df["Presupuesto"]) / df["Presupuesto"]) * 100, 2)
-    return df, meses
-
-def colorear_estado(val):
-    if val == "PAGADO":
-        return 'background-color: #d4edda; color: #155724; text-align: center'
-    elif val == "NO PAGADO":
-        return 'background-color: #f8d7da; color: #721c24; text-align: center'
-    return ''
-
-# === DATOS ===
-df, meses = cargar_datos()
-total_anual = df[meses].sum().sum()
-total_pagado = df[df["Estado"] == "PAGADO"][meses].sum().sum()
-total_no_pagado = df[df["Estado"] == "NO PAGADO"][meses].sum().sum()
-
-# === FILTROS ===
-def generar_informe_html(df):
-    resumen_total = df["Total"].sum()
-    resumen_pagado = df[df["Estado"] == "PAGADO"]["Total"].sum()
-    resumen_no_pagado = df[df["Estado"] == "NO PAGADO"]["Total"].sum()
-
-    return f"""
-    <html><head><style>
-    body {{ font-family: Arial, sans-serif; margin: 20px; color: #333; }}
-    h1 {{ color: #2c3e50; }}
-    table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
-    th, td {{ border: 1px solid #ccc; padding: 8px; text-align: left; }}
-    th {{ background-color: #f5f5f5; }}
-    .summary {{ background-color: #eef; padding: 10px; margin-top: 20px; }}
-    </style></head><body>
-    <h1>Informe de Gastos</h1>
-
-    <div class="summary">
-    <h2>Resumen General</h2>
-    <p><strong>Total Anual:</strong> ${resumen_total:,.2f}</p>
-    <p><strong>Total Pagado:</strong> ${resumen_pagado:,.2f}</p>
-    <p><strong>No Pagado:</strong> ${resumen_no_pagado:,.2f}</p>
-    </div>
-
-    <div class="summary">
-    <h2>Sugerencias de Mejora</h2>
-    <ul>
-        <li>Optimizar los conceptos que presentan variaciones positivas elevadas.</li>
-        <li>Revisar y ajustar los presupuestos que sistemáticamente son superados.</li>
-        <li>Buscar eficiencias en las categorías con mayor gasto anual.</li>
-        <li>Revisar mensualmente el estado de pagos para evitar acumulación de saldos no pagados.</li>
-    </ul>
-    </div>
-
-    <h2>Detalle de Conceptos</h2>
-    {df.to_html(index=False)}
-
-    </body></html>
-    """
-
 with st.sidebar:
+    informe_alertas_only = st.checkbox("🔍 Solo conceptos con sobrepresupuesto")
+
     if st.button("📄 Descargar Informe HTML"):
-        resumen_html = generar_informe_html(df_filtrado)
+        if informe_alertas_only:
+            df_informe = df_filtrado[df_filtrado["Total"] > df_filtrado["Presupuesto"]]
+        else:
+            df_informe = df_filtrado
+
+        resumen_html = generar_informe_html(df_informe)
         st.download_button("📄 Descargar Informe", data=resumen_html, file_name="informe_gastos.html", mime="text/html")
 busqueda_rapida = st.sidebar.text_input("🔍 Búsqueda rápida por concepto")
 with st.sidebar:
