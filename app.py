@@ -61,8 +61,9 @@ with st.sidebar:
 _filtro = st.selectbox("Variación", ["Todos", "Positiva", "Negativa"])
 
     if st.button("🔄 Restablecer Filtros"):
-        st.session_state["__rerun__"] = True
-        st.experimental_rerun()
+    st.session_state.clear()
+    st.success("🔄 Filtros restablecidos. Por favor recarga la página manualmente (Ctrl + R).")
+
 
 # === TABS ===
 tab1, tab2 = st.tabs(["Dashboard Principal", "Histórico Mensual"])
