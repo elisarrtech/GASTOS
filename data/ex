@@ -1,9 +1,0 @@
-Categoría,Concepto,Mes,Quincena,Monto,Estado,Presupuesto
-Nómina,Pago Nómina,Julio,Q1,5000,PAGADO,10000
-Nómina,Pago Nómina,Julio,Q2,5000,NO PAGADO,10000
-Nómina,Pago Nómina,Agosto,Q1,5200,PAGADO,11000
-Nómina,Pago Nómina,Agosto,Q2,5200,NO PAGADO,11000
-Otros,Luz,Julio,-,300,PAGADO,500
-Otros,Agua,Julio,-,200,NO PAGADO,400
-Otros,Internet,Agosto,-,400,PAGADO,600
-Otros,Teléfono,Agosto,-,250,NO PAGADO,400
