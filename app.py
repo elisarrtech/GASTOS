@@ -1,6 +1,9 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import smtplib
+from email.message import EmailMessage
+import os
 
 # === IMPORTACIONES PERSONALIZADAS ===
 from utils.data_loader import cargar_datos, limpiar_monto
@@ -9,6 +12,18 @@ from utils.alerts import calcular_alertas
 
 # === CONFIGURACIÓN DE PÁGINA ===
 st.set_page_config(page_title="Dashboard de Gastos", layout="wide")
+
+# === FUNCIONES DE ALERTAS POR EMAIL (SMTP SEGURO) ===
+def enviar_alerta_email(destinatario, asunto, mensaje):
+    email = EmailMessage()
+    email["From"] = os.getenv("EMAIL_USER")
+    email["To"] = destinatario
+    email["Subject"] = asunto
+    email.set_content(mensaje)
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+        smtp.login(os.getenv("EMAIL_USER"), os.getenv("EMAIL_PASSWORD"))
+        smtp.send_message(email)
 
 # === ESTILOS PERSONALIZADOS ===
 st.markdown("""
@@ -108,6 +123,16 @@ with tab1:
     if not alertas_df.empty:
         st.warning("⚠️ ¡Hay conceptos que exceden su presupuesto!")
         st.dataframe(alertas_df, use_container_width=True)
+
+        # === ENVÍO AUTOMÁTICO DE ALERTA POR EMAIL ===
+        enviar_alerta_email(
+            destinatario=os.getenv("EMAIL_TO"),
+            asunto="🚨 Alerta de Gastos Excedidos",
+            mensaje="Hay conceptos que han superado su presupuesto asignado. Revisa el dashboard para más detalles."
+        )
+
+        st.info("📧 Alerta enviada por correo electrónico.")
+
     else:
         st.success("✅ Todos los conceptos están dentro del presupuesto.")
 
