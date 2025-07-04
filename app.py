@@ -1,3 +1,33 @@
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+
+# FUNCIONES AUXILIARES
+
+def cargar_datos():
+    df = pd.read_csv("data/gastos_mensuales.csv")
+    df["Monto"] = df["Monto"].replace('[\$,]', '', regex=True).astype(float)
+    df["Presupuesto"] = df["Presupuesto"].replace('[\$,]', '', regex=True).astype(float)
+    return df
+
+def calcular_variacion(row):
+    if row['Presupuesto'] == 0:
+        return 0
+    return round(((row['Monto'] - row['Presupuesto']) / row['Presupuesto']) * 100, 2)
+
+def calcular_alertas(df):
+    alertas = df.groupby("Concepto").agg({"Monto": "sum", "Presupuesto": "max"}).reset_index()
+    alertas = alertas[alertas["Monto"] > alertas["Presupuesto"]]
+    return alertas
+
+def colorear_estado(val):
+    if val == "PAGADO":
+        return 'background-color: #d4edda; color: #155724; text-align: center'
+    elif val == "NO PAGADO":
+        return 'background-color: #f8d7da; color: #721c24; text-align: center'
+    else:
+        return ''
+
 def colorear_variacion(val):
     if val > 0:
         return 'background-color: #f8d7da; color: #721c24; text-align: center'
@@ -21,8 +51,7 @@ with st.sidebar:
     variacion_filtro = st.selectbox("Variación", ["Todos", "Positiva", "Negativa"])
 
     if st.button("🔄 Restablecer Filtros"):
-        st.experimental_rerun()st.selectbox("Variación", ["Todos", "Positiva", "Negativa"])
- = st.selectbox("Mes", ["Todos"] + sorted(df["Mes"].unique()))
+        st.experimental_rerun()
 
 # === TABS ===
 tab1, tab2 = st.tabs(["Dashboard Principal", "Histórico Mensual"])
@@ -43,9 +72,6 @@ with tab1:
         df_filtrado = df_filtrado[df_filtrado["Variación (%)"] > 0]
     elif variacion_filtro == "Negativa":
         df_filtrado = df_filtrado[df_filtrado["Variación (%)"] < 0]
-        df_filtrado = df_filtrado[df_filtrado["Categoría"] == categoria_filtro]
-    if mes_filtro != "Todos":
-        df_filtrado = df_filtrado[df_filtrado["Mes"] == mes_filtro]
 
     st.subheader("📋 Registros (Editable)")
     edited_df = st.data_editor(
@@ -66,6 +92,7 @@ with tab1:
     top_conceptos = edited_df.groupby("Concepto")["Monto"].sum().reset_index().sort_values(by="Monto", ascending=False).head(5)
     fig_top = px.bar(top_conceptos, x="Concepto", y="Monto", title="Top 5 Conceptos más Caros", color="Concepto")
     st.plotly_chart(fig_top, use_container_width=True)
+
     st.subheader("🔑 Indicadores Principales")
 
     total_anual = edited_df["Monto"].sum()
@@ -101,12 +128,6 @@ with tab1:
     if not alertas_df.empty:
         st.warning("Hay conceptos que superan su presupuesto")
         st.dataframe(alertas_df)
-
-        # enviar_alerta_email(
-        #     destinatario=os.getenv("EMAIL_TO"),
-        #     asunto="🚨 Alerta de Presupuesto",
-        #     mensaje="Hay conceptos que han superado su presupuesto asignado. Revisa el dashboard."
-        # )
 
         st.info("⚠️ Alerta detectada. (Envío de email desactivado temporalmente)")
     else:
