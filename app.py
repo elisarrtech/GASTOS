@@ -117,7 +117,15 @@ with tab1:
     col3.metric("⏳ No Pagado", f"${total_no_pagado:,.2f}")
 
     with st.expander("📄 Generar Informes"):
-        resumen = f"""
+        tabla_html = (
+    edited_df[['Categoría', 'Concepto', 'Mes', 'Monto', 'Presupuesto', 'Estado', 'Variación (%)']]
+    .style
+    .applymap(lambda val: 'background-color: #d4edda;' if val == 'PAGADO' else ('background-color: #f8d7da;' if val == 'NO PAGADO' else ''), subset=['Estado'])
+    .applymap(lambda val: 'background-color: #f8d7da;' if isinstance(val, (int, float)) and val > 0 else ('background-color: #d4edda;' if isinstance(val, (int, float)) and val < 0 else ''), subset=['Variación (%)'])
+    .to_html(escape=False, index=False)
+)
+
+resumen = f"""
 <html><head>
 <style>
     body {{ font-family: Arial, sans-serif; margin: 20px; color: #333; }}
@@ -126,11 +134,6 @@ with tab1:
     table {{ width: 100%; border-collapse: collapse; margin-top: 10px; }}
     th, td {{ border: 1px solid #ccc; padding: 8px; text-align: left; }}
     th {{ background-color: #f5f5f5; }}
-    h1, h2 { color: #2c3e50; }
-    ul { margin-left: 20px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background-color: #f5f5f5; }
 </style>
 </head><body>
 <h1>Informe de Gastos Mensuales</h1>
@@ -150,6 +153,7 @@ with tab1:
 </ul>
 
 <h2>Detalle de Gastos</h2>
+{tabla_html}
 {edited_df[['Categoría', 'Concepto', 'Mes', 'Monto', 'Presupuesto', 'Estado', 'Variación (%)']].to_html(index=False)}
 
 <p><em>Sugerencia:</em> Monitorea mensualmente los conceptos con alta variación y considera acciones de ajuste presupuestal.</p>
