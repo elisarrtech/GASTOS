@@ -4,3 +4,4 @@ plotly
 openpyxl
 xhtml2pdf
 kaleido
+xlsxwriter
