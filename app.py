@@ -4,8 +4,6 @@ import plotly.express as px
 import smtplib
 from email.message import EmailMessage
 import os
-import io
-import base64
 from utils.data_loader import cargar_datos, limpiar_monto
 from utils.styles import colorear_estado
 from utils.alerts import calcular_alertas
@@ -104,14 +102,6 @@ with tab1:
     fig_pie = px.pie(gastos_por_categoria, names="Categoría", values="Total", title="Distribución por Categoría")
     st.plotly_chart(fig_pie, use_container_width=True)
 
-    # Convertir gráficos a imágenes base64
-    buf_bar = io.BytesIO()
-    buf_pie = io.BytesIO()
-    fig_bar.write_image(buf_bar, format='png')
-    fig_pie.write_image(buf_pie, format='png')
-    bar_base64 = base64.b64encode(buf_bar.getvalue()).decode()
-    pie_base64 = base64.b64encode(buf_pie.getvalue()).decode()
-
     st.divider()
     st.subheader("🚨 Alertas de Presupuesto")
 
@@ -140,12 +130,6 @@ with tab1:
     <p>Total pagado: ${total_pagado:,.2f}</p>
     <p>Pendiente por pagar: ${total_no_pagado:,.2f}</p>
     <p>Promedio mensual: ${promedio_mensual:,.2f}</p>
-    <br>
-    <h2>Gráfico de Gastos por Mes</h2>
-    <img src='data:image/png;base64,{bar_base64}' width='600'>
-    <br>
-    <h2>Distribución por Categoría</h2>
-    <img src='data:image/png;base64,{pie_base64}' width='600'>
     """
 
     if st.button("📄 Generar PDF"):
