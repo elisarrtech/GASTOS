@@ -1,70 +1,109 @@
 import streamlit as st
 import pandas as pd
+import os
 
-# Configuración
-st.set_page_config(page_title="Dashboard de Gastos", layout="wide")
-st.title("📊 Dashboard de Gastos Mensuales")
+# Configuración inicial
+st.set_page_config(page_title="📊 Gastos Mensuales", layout="wide")
 
-# --- Función para cargar y limpiar datos ---
+# Ruta del archivo
+ARCHIVO_GASTOS = "data/gastos.csv"
+
+# Cargar datos
 @st.cache_data
 def cargar_datos():
-    try:
-        df = pd.read_csv("data/hoja_ejemplo_gastos.csv")
-        df = df.dropna(how='all').reset_index(drop=True)
-        return df
+    if not os.path.exists(ARCHIVO_GASTOS):
+        return pd.DataFrame(columns=["Categoría", "Concepto", "Junio", "Julio", "Agosto",
+                                      "Septiembre", "Octubre", "Noviembre", "Diciembre"])
+    return pd.read_csv(ARCHIVO_GASTOS)
 
-    except Exception as e:
-        st.error(f"Error al cargar los datos: {e}")
-        return None
-
-# --- Limpiar montos a números ---
-def limpiar_montos(df):
-    quincenas = ['JUNIO Q1', 'JUNIO Q2', 'JULIO Q1', 'JULIO Q2', 'AGOSTO Q1', 'AGOSTO Q2',
-                 'SEPTIEMBRE Q1', 'SEPTIEMBRE Q2', 'OCTUBRE Q1', 'OCTUBRE Q2',
-                 'NOVIEMBRE Q1', 'NOVIEMBRE Q2', 'DICIEMBRE Q1', 'DICIEMBRE Q2']
-    for q in quincenas:
-        if q in df.columns:
-            df[q] = df[q].str.replace('[,$]', '', regex=True).astype(float)
-    return df
-
-# --- Cargar datos ---
 df = cargar_datos()
 
-if df is not None and not df.empty:
-    st.success("Datos cargados correctamente.")
+# Limpiar valores y convertir a números
+def limpiar_monto(valor):
+    try:
+        return float(str(valor).replace("$", "").replace(",", ""))
+    except:
+        return 0.0
 
-    # Asegurar columna de tipo si no existe
-    if 'Tipo' not in df.columns:
-        df['Tipo'] = 'Mensual'
+# Convertir meses a numéricos
+meses = ["Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+for mes in meses:
+    df[mes] = df[mes].apply(limpiar_monto)
 
-    # Limpiar montos para operaciones
-    df_clean = limpiar_montos(df.copy())
+# Título
+st.title("📄 Gestión de Gastos Mensuales")
+st.markdown("### Filtra, edita y analiza tus gastos fácilmente.")
 
-    # ---- FILTRO POR CATEGORÍA ----
-    categorias = ['Todas'] + list(df['Categoría'].unique())
-    categoria_seleccionada = st.selectbox("Selecciona una categoría", categorias)
+# Filtros
+col1, col2 = st.columns(2)
+with col1:
+    categoria_filtro = st.selectbox("🔍 Filtrar por Categoría", ["Todas"] + df["Categoría"].unique().tolist())
+with col2:
+    concepto_busqueda = st.text_input("🔎 Buscar por Concepto")
 
-    # Filtrar datos
-    if categoria_seleccionada != 'Todas':
-        df_filtrado = df[df['Categoría'] == categoria_seleccionada]
-    else:
-        df_filtrado = df.copy()
+# Aplicar filtros
+df_filtrado = df.copy()
+if categoria_filtro != "Todas":
+    df_filtrado = df_filtrado[df_filtrado["Categoría"] == categoria_filtro]
+if concepto_busqueda:
+    df_filtrado = df_filtrado[df_filtrado["Concepto"].str.contains(concepto_busqueda, case=False)]
 
-    # ---- Mostrar tabla según tipo ----
-    if categoria_seleccionada == 'Nóminas':
-        st.markdown("### 🗂 Datos de Nóminas por Quincena")
-        cols_quincena = ['Categoría', 'Concepto', 'Tipo'] + [col for col in df.columns if 'Q' in col]
-        df_nomina = df_filtrado[cols_quincena]
-        edited_df = st.data_editor(df_nomina, use_container_width=True, key="nomina")
-    else:
-        st.markdown("### 🗂 Datos mensuales")
-        cols_mensuales = ['Categoría', 'Concepto', 'Tipo'] + [col for col in df.columns if 'Q' not in col and col not in ['Categoría', 'Concepto', 'Tipo']]
-        df_mensual = df_filtrado[cols_mensuales]
-        edited_df = st.data_editor(df_mensual, use_container_width=True, key="mensual")
+# Mostrar tabla editable
+st.subheader("📋 Registros Filtrados")
+edited_df = st.data_editor(df_filtrado, use_container_width=True, num_rows="dynamic", key="editar_gastos")
 
-    # Opcional: mostrar datos actualizados
-    with st.expander("🔍 Ver datos actualizados"):
-        st.dataframe(edited_df, use_container_width=True)
+# Guardar cambios
+if st.button("💾 Guardar Cambios"):
+    edited_df.to_csv(ARCHIVO_GASTOS, index=False)
+    st.success("✅ Datos guardados correctamente.")
+    st.cache_data.clear()  # Limpiar caché para recargar datos actualizados
 
-else:
-    st.warning("No se pudieron cargar los datos o el archivo está vacío.")
+# KPIs
+st.subheader("📈 KPIs Principales")
+
+total_por_mes = edited_df[meses].sum()
+total_anual = total_por_mes.sum()
+
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric("💰 Total Anual", f"${total_anual:,.2f}")
+with col2:
+    st.metric("📅 Promedio Mensual", f"${total_anual / len(meses):,.2f}")
+with col3:
+    st.metric("📌 Número de Conceptos", len(edited_df))
+
+# Gráfico de barras por mes
+st.subheader("📉 Gastos por Mes")
+grafico_barras = edited_df[meses].sum().reset_index()
+grafico_barras.columns = ["Mes", "Total"]
+fig_bar = px.bar(grafico_barras, x="Mes", y="Total", title="Gasto Total por Mes")
+st.plotly_chart(fig_bar, use_container_width=True)
+
+# Gráfico de torta por categoría
+st.subheader("🥧 Distribución por Categoría")
+grafico_categoria = edited_df.groupby("Categoría")[meses].sum().sum(axis=1).reset_index(name="Total")
+fig_pie = px.pie(grafico_categoria, names="Categoría", values="Total", title="Distribución por Categoría")
+st.plotly_chart(fig_pie, use_container_width=True)
+
+# Formulario para agregar nuevo concepto
+st.subheader("➕ Añadir Nuevo Concepto")
+with st.form("form_nuevo_concepto"):
+    nueva_categoria = st.selectbox("Categoría", df["Categoría"].unique().tolist() + ["Otra..."])
+    if nueva_categoria == "Otra...":
+        nueva_categoria = st.text_input("Escribe la nueva categoría")
+    nuevo_concepto = st.text_input("Nombre del Concepto")
+    nuevos_valores = [st.number_input(f"{mes}", min_value=0.0, format="%.2f") for mes in meses]
+    submitted = st.form_submit_button("Agregar")
+
+    if submitted and nuevo_concepto:
+        nuevo_registro = {
+            "Categoría": nueva_categoria,
+            "Concepto": nuevo_concepto,
+            **{mes: val for mes, val in zip(meses, nuevos_valores)}
+        }
+        df_nuevo = pd.DataFrame([nuevo_registro])
+        df_final = pd.concat([edited_df, df_nuevo], ignore_index=True)
+        df_final.to_csv(ARCHIVO_GASTOS, index=False)
+        st.success("✅ Concepto agregado y guardado.")
+        st.cache_data.clear()
+        st.experimental_rerun()
