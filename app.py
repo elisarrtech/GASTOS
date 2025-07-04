@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 
 # Configuración
 st.set_page_config(page_title="Dashboard de Gastos", layout="wide")
@@ -20,9 +19,12 @@ def cargar_datos():
 
 # --- Limpiar montos a números ---
 def limpiar_montos(df):
-    meses = ['Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
-    for mes in meses:
-        df[mes] = df[mes].str.replace('[,$]', '', regex=True).astype(float)
+    quincenas = ['JUNIO Q1', 'JUNIO Q2', 'JULIO Q1', 'JULIO Q2', 'AGOSTO Q1', 'AGOSTO Q2',
+                 'SEPTIEMBRE Q1', 'SEPTIEMBRE Q2', 'OCTUBRE Q1', 'OCTUBRE Q2',
+                 'NOVIEMBRE Q1', 'NOVIEMBRE Q2', 'DICIEMBRE Q1', 'DICIEMBRE Q2']
+    for q in quincenas:
+        if q in df.columns:
+            df[q] = df[q].str.replace('[,$]', '', regex=True).astype(float)
     return df
 
 # --- Cargar datos ---
@@ -31,64 +33,38 @@ df = cargar_datos()
 if df is not None and not df.empty:
     st.success("Datos cargados correctamente.")
 
-    # Asegurar que haya una columna de Presupuesto
-    if 'Presupuesto' not in df.columns:
-        df['Presupuesto'] = 0
+    # Asegurar columna de tipo si no existe
+    if 'Tipo' not in df.columns:
+        df['Tipo'] = 'Mensual'
 
     # Limpiar montos para operaciones
     df_clean = limpiar_montos(df.copy())
 
-    # ---- FILTROS ----
-    st.sidebar.header("🔍 Filtros")
-
-    # Filtro por categoría
+    # ---- FILTRO POR CATEGORÍA ----
     categorias = ['Todas'] + list(df['Categoría'].unique())
-    categoria_seleccionada = st.sidebar.selectbox("Selecciona una categoría", categorias)
+    categoria_seleccionada = st.selectbox("Selecciona una categoría", categorias)
 
-    # Filtro por mes
-    meses = ['Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
-    mes_seleccionado = st.sidebar.selectbox("Selecciona un mes", meses)
-
-    # Búsqueda por nombre
-    busqueda = st.sidebar.text_input("Buscar concepto", "")
-
-    # Aplicar filtros
-    df_filtrado = df.copy()
+    # Filtrar datos
     if categoria_seleccionada != 'Todas':
-        df_filtrado = df_filtrado[df_filtrado['Categoría'] == categoria_seleccionada]
+        df_filtrado = df[df['Categoría'] == categoria_seleccionada]
+    else:
+        df_filtrado = df.copy()
 
-    if busqueda:
-        df_filtrado = df_filtrado[df_filtrado['Concepto'].str.contains(busqueda, case=False, na=False)]
+    # ---- Mostrar tabla según tipo ----
+    if categoria_seleccionada == 'Nóminas':
+        st.markdown("### 🗂 Datos de Nóminas por Quincena")
+        cols_quincena = ['Categoría', 'Concepto', 'Tipo'] + [col for col in df.columns if 'Q' in col]
+        df_nomina = df_filtrado[cols_quincena]
+        edited_df = st.data_editor(df_nomina, use_container_width=True, key="nomina")
+    else:
+        st.markdown("### 🗂 Datos mensuales")
+        cols_mensuales = ['Categoría', 'Concepto', 'Tipo'] + [col for col in df.columns if 'Q' not in col and col not in ['Categoría', 'Concepto', 'Tipo']]
+        df_mensual = df_filtrado[cols_mensuales]
+        edited_df = st.data_editor(df_mensual, use_container_width=True, key="mensual")
 
-    # Mostrar KPIs generales o filtrados
-    st.markdown("### 📊 KPIs Generales")
-    total_gastos = df_clean[meses].sum().sum()
-    promedio_mensual = total_gastos / 7
-    col1, col2 = st.columns(2)
-    col1.metric(label="Total de gastos anuales", value=f"${total_gastos:,.2f}")
-    col2.metric(label="Promedio mensual", value=f"${promedio_mensual:,.2f}")
-
-    # Mostrar totales por categoría
-    st.markdown("### 🧮 Totales por categoría")
-    df_total_categoria = df_clean.groupby('Categoría')[meses].sum()
-    df_total_categoria['Total Anual'] = df_total_categoria.sum(axis=1)
-    st.dataframe(df_total_categoria, use_container_width=True)
-
-    # Gráfico comparativo por categoría
-    st.markdown("### 📈 Comparativa de gastos por categoría")
-    fig = px.bar(df_total_categoria.reset_index(), x='Categoría', y='Total Anual', text_auto=True)
-    st.plotly_chart(fig, use_container_width=True)
-
-    # Mostrar tabla filtrada editable
-    st.markdown(f"### 🗂 Datos filtrados ({categoria_seleccionada} - {mes_seleccionado})")
-    df_editable = df_filtrado[['Concepto', mes_seleccionado]].copy()
-    edited_df = st.data_editor(df_editable, use_container_width=True)
-
-    # Mostrar gráfico de barras por concepto
-    if not df_editable.empty:
-        st.markdown("### 📊 Gastos por concepto")
-        fig_bar = px.bar(df_editable, x='Concepto', y=mes_seleccionado, text_auto=True)
-        st.plotly_chart(fig_bar, use_container_width=True)
+    # Opcional: mostrar datos actualizados
+    with st.expander("🔍 Ver datos actualizados"):
+        st.dataframe(edited_df, use_container_width=True)
 
 else:
     st.warning("No se pudieron cargar los datos o el archivo está vacío.")
