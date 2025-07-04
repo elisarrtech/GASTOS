@@ -57,6 +57,38 @@ with st.sidebar:
 
 
 
+# === FORMULARIO DE NUEVO GASTO ===
+with st.sidebar.expander("➕ Agregar nuevo gasto"):
+    with st.form("agregar_gasto_form"):
+        año = st.number_input("Año", min_value=2020, max_value=2100, step=1, value=2024)
+        mes = st.selectbox("Mes", ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"])
+        quincena = st.selectbox("Quincena", ["1", "2"])
+        banco = st.text_input("Banco")
+        categoria = st.selectbox("Categoría", sorted(df["Categoría"].unique()))
+        concepto = st.text_input("Concepto")
+        monto = st.number_input("Monto", min_value=0.0, step=100.0)
+        presupuesto = st.number_input("Presupuesto", min_value=0.0, step=100.0)
+        estado = st.selectbox("Estado", ["PAGADO", "NO PAGADO"])
+
+        submitted = st.form_submit_button("Agregar")
+
+        if submitted:
+            nuevo_registro = pd.DataFrame([{
+                "Año": año,
+                "Mes": mes,
+                "Quincena": quincena,
+                "Banco": banco,
+                "Categoría": categoria,
+                "Concepto": concepto,
+                "Monto": monto,
+                "Presupuesto": presupuesto,
+                "Estado": estado
+            }])
+            df = pd.concat([df, nuevo_registro], ignore_index=True)
+            df.to_csv("data/gastos_mensuales.csv", index=False)
+            st.success("✅ Gasto agregado correctamente")
+            st.experimental_rerun()
+
 # === TABS ===
 tab1, tab2 = st.tabs(["Dashboard Principal", "Histórico Mensual"])
 
