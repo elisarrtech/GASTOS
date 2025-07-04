@@ -1,5 +1,7 @@
 streamlit
 pandas
+pandas as pd
+plotly.express as px
 openpyxl
 plotly
 fpdf2
