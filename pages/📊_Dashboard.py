@@ -91,3 +91,29 @@ df_mostrar = df_filtrado.drop(columns=columnas_estado, errors='ignore')
 st.subheader("📋 Registros Filtrados")
 styled_df = df_mostrar.style.applymap(colorear_estado, subset=[col for col in df_mostrar.columns if "Estado" in col])
 st.dataframe(styled_df)
+
+for index, row in edited_df.iterrows():
+    col1, col2, col3 = st.columns([3, 1, 1])
+    with col1:
+        st.text(row["Concepto"])
+    with col2:
+        estado_actual = row.get("Estado", "Sin pagar")
+        if st.button(f"{estado_actual} 🔄", key=f"toggle_{index}"):
+            nuevo_estado = "Pagado" if estado_actual == "Sin pagar" else "Sin pagar"
+            edited_df.at[index, "Estado"] = nuevo_estado
+            edited_df.to_csv("data/gastos_mensuales.csv", index=False)
+            st.experimental_rerun()
+    with col3:
+        st.markdown(f"<div style='color: {'green' if estado_actual == 'Pagado' else 'red'};'>●</div>", unsafe_allow_html=True)
+
+total_pagado = len(df[df["Estado"] == "Pagado"])
+total_saldo = len(df[df["Estado"] == "Sin pagar"])
+
+fig = px.pie(
+    pd.DataFrame({"Estado": ["Pagado", "Sin pagar"], "Cantidad": [total_pagado, total_saldo]}),
+    names="Estado",
+    values="Cantidad",
+    title="Estado de Pagos",
+    color_discrete_map={"Pagado": "green", "Sin pagar": "red"}
+)
+st.plotly_chart(fig, use_container_width=True)
