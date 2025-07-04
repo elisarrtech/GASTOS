@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 import os
 
 # Configuración inicial
@@ -25,8 +26,10 @@ def limpiar_monto(valor):
     except:
         return 0.0
 
-# Convertir meses a numéricos
+# Meses disponibles
 meses = ["Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+
+# Convertir meses a numéricos
 for mes in meses:
     df[mes] = df[mes].apply(limpiar_monto)
 
@@ -46,7 +49,7 @@ df_filtrado = df.copy()
 if categoria_filtro != "Todas":
     df_filtrado = df_filtrado[df_filtrado["Categoría"] == categoria_filtro]
 if concepto_busqueda:
-    df_filtrado = df_filtrado[df_filtrado["Concepto"].str.contains(concepto_busqueda, case=False)]
+    df_filtrado = df_filtrado[df_filtrado["Concepto"].str.contains(concepto_busqueda, case=False, na=False)]
 
 # Mostrar tabla editable
 st.subheader("📋 Registros Filtrados")
@@ -58,32 +61,33 @@ if st.button("💾 Guardar Cambios"):
     st.success("✅ Datos guardados correctamente.")
     st.cache_data.clear()  # Limpiar caché para recargar datos actualizados
 
-# KPIs
-st.subheader("📈 KPIs Principales")
+# Solo graficar si hay datos
+if not edited_df.empty:
+    # KPIs
+    st.subheader("📈 KPIs Principales")
+    total_por_mes = edited_df[meses].sum()
+    total_anual = total_por_mes.sum()
 
-total_por_mes = edited_df[meses].sum()
-total_anual = total_por_mes.sum()
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("💰 Total Anual", f"${total_anual:,.2f}")
+    with col2:
+        st.metric("📅 Promedio Mensual", f"${total_anual / len(meses):,.2f}")
+    with col3:
+        st.metric("📌 Número de Conceptos", len(edited_df))
 
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.metric("💰 Total Anual", f"${total_anual:,.2f}")
-with col2:
-    st.metric("📅 Promedio Mensual", f"${total_anual / len(meses):,.2f}")
-with col3:
-    st.metric("📌 Número de Conceptos", len(edited_df))
+    # Gráfico de barras por mes
+    st.subheader("📉 Gastos por Mes")
+    grafico_barras = edited_df[meses].sum().reset_index()
+    grafico_barras.columns = ["Mes", "Total"]
+    fig_bar = px.bar(grafico_barras, x="Mes", y="Total", title="Gasto Total por Mes")
+    st.plotly_chart(fig_bar, use_container_width=True)
 
-# Gráfico de barras por mes
-st.subheader("📉 Gastos por Mes")
-grafico_barras = edited_df[meses].sum().reset_index()
-grafico_barras.columns = ["Mes", "Total"]
-fig_bar = px.bar(grafico_barras, x="Mes", y="Total", title="Gasto Total por Mes")
-st.plotly_chart(fig_bar, use_container_width=True)
-
-# Gráfico de torta por categoría
-st.subheader("🥧 Distribución por Categoría")
-grafico_categoria = edited_df.groupby("Categoría")[meses].sum().sum(axis=1).reset_index(name="Total")
-fig_pie = px.pie(grafico_categoria, names="Categoría", values="Total", title="Distribución por Categoría")
-st.plotly_chart(fig_pie, use_container_width=True)
+    # Gráfico de torta por categoría
+    st.subheader("🥧 Distribución por Categoría")
+    grafico_categoria = edited_df.groupby("Categoría")[meses].sum().sum(axis=1).reset_index(name="Total")
+    fig_pie = px.pie(grafico_categoria, names="Categoría", values="Total", title="Distribución por Categoría")
+    st.plotly_chart(fig_pie, use_container_width=True)
 
 # Formulario para agregar nuevo concepto
 st.subheader("➕ Añadir Nuevo Concepto")
