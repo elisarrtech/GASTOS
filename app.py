@@ -18,6 +18,14 @@ st.markdown("""
         border-radius: 8px;
         padding: 0.4em 0.8em;
     }
+    .estado-pagado {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    .estado-no-pagado {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -68,7 +76,7 @@ if categoria_filtro != "Todas":
 if concepto_busqueda:
     df_filtrado = df_filtrado[df_filtrado["Concepto"].str.contains(concepto_busqueda, case=False, na=False)]
 
-# === TABLA EDITABLE ===
+# === TABLA EDITABLE CON ESTADO INTEGRADO ===
 st.subheader("📋 Registros Filtrados")
 edited_df = st.data_editor(
     df_filtrado,
@@ -117,30 +125,27 @@ if not edited_df.empty:
     fig_pie = px.pie(grafico_categoria, names="Categoría", values="Total", title="Distribución por Categoría")
     st.plotly_chart(fig_pie, use_container_width=True)
 
-   # === ESTADO DE PAGOS - BARRA DE PROGRESO ===
-total_pagado = len(edited_df[edited_df["Estado"] == "Pagado"])
-total_conceptos = len(edited_df)
-porcentaje_pagado = total_pagado / total_conceptos if total_conceptos > 0 else 0
+    # === ESTADO DE PAGOS - BARRA DE PROGRESO ===
+    total_pagado = len(edited_df[edited_df["Estado"] == "Pagado"])
+    total_saldo = len(edited_df[edited_df["Estado"] == "Sin pagar"])
 
-st.subheader("📊 Progreso de Pagos")
-st.progress(porcentaje_pagado)
-st.caption(f"{total_pagado} de {total_conceptos} conceptos pagados ({int(porcentaje_pagado * 100)}%)")
+    st.subheader("📊 Estado de Pagos")
+    st.progress(total_pagado / (total_pagado + total_saldo))
+    st.caption(f"{total_pagado} de {total_pagado + total_saldo} conceptos pagados ({int((total_pagado / (total_pagado + total_saldo) * 100))}% pagados)")
 
-# === TABLA CON ESTILO DE ESTADO ===
-st.subheader("📌 Estado de Gastos")
-styled_df = edited_df.style.applymap(colorear_estado, subset=["Estado"])
-st.dataframe(styled_df, use_container_width=True)
+    # === TABLA CON ESTILO DE ESTADO ===
+    styled_df = edited_df.style.applymap(colorear_estado, subset=["Estado"])
+    st.dataframe(styled_df, use_container_width=True)
 
-# === ACTUALIZAR ESTADO INLINE EN CADA FILA (opcional) ===
-st.subheader("🔄 Actualiza el estado de cada gasto")
-for index, row in edited_df.iterrows():
-    col1, col2, col3 = st.columns([3, 1, 1])
-    with col1:
-        st.markdown(f"**{row['Concepto']}**")
-    with col2:
-        estado_actual = row.get("Estado", "Sin pagar")
-        nuevo_estado = "Pagado" if estado_actual == "Sin pagar" else "Sin pagar"
-        if st.button(f"{estado_actual} ➤ {nuevo_estado}", key=f"toggle_{index}"):
-            edited_df.at[index, "Estado"] = nuevo_estado
-            edited_df.to_csv("data/gastos_mensuales.csv", index=False)
-            st.rerun()
+    # === ACTUALIZAR ESTADO INLINE EN CADA FILA ===
+    for index, row in edited_df.iterrows():
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.markdown(f"**{row['Concepto']}**")
+        with col2:
+            estado_actual = row.get("Estado", "Sin pagar")
+            nuevo_estado = "Pagado" if estado_actual == "Sin pagar" else "Sin pagar"
+            if st.button(f"{estado_actual} ➤ {nuevo_estado}", key=f"toggle_{index}"):
+                edited_df.at[index, "Estado"] = nuevo_estado
+                edited_df.to_csv("data/gastos_mensuales.csv", index=False)
+                st.rerun()
