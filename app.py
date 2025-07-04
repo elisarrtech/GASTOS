@@ -1,8 +1,44 @@
-# === CALCULO DE VARIACION ===
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+import smtplib
+from email.message import EmailMessage
+import os
+
+st.set_page_config(page_title="Dashboard de Gastos", layout="wide")
+
+# === FUNCIONES AUXILIARES ===
+def cargar_datos():
+    df = pd.read_csv("data/gastos_mensuales.csv")
+    df["Monto"] = df["Monto"].replace('[\$,]', '', regex=True).astype(float)
+    df["Presupuesto"] = df["Presupuesto"].replace('[\$,]', '', regex=True).astype(float)
+    return df
+
+def calcular_alertas(df):
+    alertas = df.groupby("Concepto").agg({"Monto": "sum", "Presupuesto": "max"}).reset_index()
+    alertas = alertas[alertas["Monto"] > alertas["Presupuesto"]]
+    return alertas
+
 def calcular_variacion(row):
     if row['Presupuesto'] == 0:
         return 0
     return round(((row['Monto'] - row['Presupuesto']) / row['Presupuesto']) * 100, 2)
+
+def colorear_estado(val):
+    if val == "PAGADO":
+        return 'background-color: #d4edda; color: #155724; text-align: center'
+    elif val == "NO PAGADO":
+        return 'background-color: #f8d7da; color: #721c24; text-align: center'
+    else:
+        return ''
+
+def colorear_variacion(val):
+    if val > 0:
+        return 'background-color: #f8d7da; color: #721c24; text-align: center'
+    elif val < 0:
+        return 'background-color: #d4edda; color: #155724; text-align: center'
+    else:
+        return ''
 
 # === INTERFAZ ===
 st.title("📊 Dashboard de Gastos Mensuales")
@@ -74,22 +110,13 @@ with tab1:
     if not alertas_df.empty:
         st.warning("Hay conceptos que superan su presupuesto")
         st.dataframe(alertas_df)
-
-        # enviar_alerta_email(
-        #     destinatario=os.getenv("EMAIL_TO"),
-        #     asunto="🚨 Alerta de Presupuesto",
-        #     mensaje="Hay conceptos que han superado su presupuesto asignado. Revisa el dashboard."
-        # )
-
         st.info("⚠️ Alerta detectada. (Envío de email desactivado temporalmente)")
     else:
         st.success("Todos los conceptos están dentro del presupuesto")
 
     st.subheader("📄 Tabla con Estado Visual")
-    st.dataframe(
-        edited_df.style.applymap(colorear_estado, subset=["Estado"]),
-        use_container_width=True
-    )
+    styled_table = edited_df.style.applymap(colorear_estado, subset=["Estado"]).applymap(colorear_variacion, subset=["Variación (%)"])
+    st.dataframe(styled_table, use_container_width=True)
 
     st.download_button("📥 Descargar CSV", data=edited_df.to_csv(index=False), file_name="gastos_exportados.csv")
 
@@ -105,7 +132,6 @@ with tab2:
     st.divider()
 
     st.subheader("📊 Comparativo: Gastado vs Presupuesto por Mes")
-
     comparativo = df.groupby("Mes").agg({"Monto": "sum", "Presupuesto": "sum"}).reset_index()
     fig_comp = px.bar(
         comparativo.melt(id_vars="Mes", value_vars=["Monto", "Presupuesto"], var_name="Tipo", value_name="Total"),
