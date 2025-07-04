@@ -30,6 +30,49 @@ total_pagado = df[df["Estado"] == "PAGADO"][meses].sum().sum()
 total_no_pagado = df[df["Estado"] == "NO PAGADO"][meses].sum().sum()
 
 # === FILTROS ===
+def generar_informe_html(df):
+    resumen_total = df["Total"].sum()
+    resumen_pagado = df[df["Estado"] == "PAGADO"]["Total"].sum()
+    resumen_no_pagado = df[df["Estado"] == "NO PAGADO"]["Total"].sum()
+
+    return f"""
+    <html><head><style>
+    body {{ font-family: Arial, sans-serif; margin: 20px; color: #333; }}
+    h1 {{ color: #2c3e50; }}
+    table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+    th, td {{ border: 1px solid #ccc; padding: 8px; text-align: left; }}
+    th {{ background-color: #f5f5f5; }}
+    .summary {{ background-color: #eef; padding: 10px; margin-top: 20px; }}
+    </style></head><body>
+    <h1>Informe de Gastos</h1>
+
+    <div class="summary">
+    <h2>Resumen General</h2>
+    <p><strong>Total Anual:</strong> ${resumen_total:,.2f}</p>
+    <p><strong>Total Pagado:</strong> ${resumen_pagado:,.2f}</p>
+    <p><strong>No Pagado:</strong> ${resumen_no_pagado:,.2f}</p>
+    </div>
+
+    <div class="summary">
+    <h2>Sugerencias de Mejora</h2>
+    <ul>
+        <li>Optimizar los conceptos que presentan variaciones positivas elevadas.</li>
+        <li>Revisar y ajustar los presupuestos que sistemáticamente son superados.</li>
+        <li>Buscar eficiencias en las categorías con mayor gasto anual.</li>
+        <li>Revisar mensualmente el estado de pagos para evitar acumulación de saldos no pagados.</li>
+    </ul>
+    </div>
+
+    <h2>Detalle de Conceptos</h2>
+    {df.to_html(index=False)}
+
+    </body></html>
+    """
+
+with st.sidebar:
+    if st.button("📄 Descargar Informe HTML"):
+        resumen_html = generar_informe_html(df_filtrado)
+        st.download_button("📄 Descargar Informe", data=resumen_html, file_name="informe_gastos.html", mime="text/html")
 busqueda_rapida = st.sidebar.text_input("🔍 Búsqueda rápida por concepto")
 with st.sidebar:
     st.header("Filtros")
