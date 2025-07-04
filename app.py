@@ -124,6 +124,23 @@ with tab1:
         st.warning("⚠️ ¡Hay conceptos que exceden su presupuesto!")
         st.dataframe(alertas_df, use_container_width=True)
 
+
+    st.subheader("🖨️ Exportar Dashboard a PDF")
+
+# Contenido HTML básico (puedes mejorar el estilo)
+html_content = f"""
+<h1>Resumen de Gastos</h1>
+<p>Total anual: ${total_anual:,.2f}</p>
+<p>Total pagado: ${total_pagado:,.2f}</p>
+<p>Pendiente por pagar: ${total_no_pagado:,.2f}</p>
+<p>Promedio mensual: ${promedio_mensual:,.2f}</p>
+"""
+
+if st.button("📄 Generar PDF"):
+    pdf_data = generar_pdf(html_content)
+    st.download_button(label="📥 Descargar PDF", data=pdf_data, file_name="resumen_gastos.pdf", mime="application/pdf")
+
+
         # === ENVÍO AUTOMÁTICO DE ALERTA POR EMAIL ===
         enviar_alerta_email(
             destinatario=os.getenv("EMAIL_TO"),
@@ -167,3 +184,5 @@ with tab2:
     st.plotly_chart(fig_hist, use_container_width=True)
 
     st.divider()
+
+from utils.export_pdf import generar_pdf
