@@ -125,48 +125,48 @@ with tab1:
     .to_html(escape=False, index=False)
 )
 
-resumen = f"""
-<html><head>
-<style>
-    body {{ font-family: Arial, sans-serif; margin: 20px; color: #333; }}
-    h1, h2 {{ color: #2c3e50; }}
-    ul {{ margin-left: 20px; }}
-    table {{ width: 100%; border-collapse: collapse; margin-top: 10px; }}
-    th, td {{ border: 1px solid #ccc; padding: 8px; text-align: left; }}
-    th {{ background-color: #f5f5f5; }}
-</style>
-</head><body>
-<h1>Informe de Gastos Mensuales</h1>
+        resumen = f"""
+        <html><head>
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 20px; color: #333; }}
+            h1, h2 {{ color: #2c3e50; }}
+            ul {{ margin-left: 20px; }}
+            table {{ width: 100%; border-collapse: collapse; margin-top: 10px; }}
+            th, td {{ border: 1px solid #ccc; padding: 8px; text-align: left; }}
+            th {{ background-color: #f5f5f5; }}
+        </style>
+        </head><body>
+        <h1>Informe de Gastos Mensuales</h1>
 
-<h2>Indicadores Clave</h2>
-<ul>
-<li>Total Anual: ${total_anual:,.2f}</li>
-<li>Total Pagado: ${total_pagado:,.2f}</li>
-<li>No Pagado: ${total_no_pagado:,.2f}</li>
-</ul>
+        <h2>Indicadores Clave</h2>
+        <ul>
+        <li>Total Anual: ${total_anual:,.2f}</li>
+        <li>Total Pagado: ${total_pagado:,.2f}</li>
+        <li>No Pagado: ${total_no_pagado:,.2f}</li>
+        </ul>
 
-<h2>Recomendaciones</h2>
-<ul>
-<li>Revisa los conceptos con mayor gasto.</li>
-<li>Ajusta presupuestos con variación positiva mayor al 10%.</li>
-<li>Analiza los gastos por categoría y mes.</li>
-</ul>
+        <h2>Recomendaciones</h2>
+        <ul>
+        <li>Revisa los conceptos con mayor gasto.</li>
+        <li>Ajusta presupuestos con variación positiva mayor al 10%.</li>
+        <li>Analiza los gastos por categoría y mes.</li>
+        </ul>
 
-<h2>Detalle de Gastos</h2>
-{tabla_html}
+        <h2>Detalle de Gastos</h2>
+        {tabla_html}
 
-<p><em>Sugerencia:</em> Monitorea mensualmente los conceptos con alta variación y considera acciones de ajuste presupuestal.</p>
-</body></html>
-"""
+        <p><em>Sugerencia:</em> Monitorea mensualmente los conceptos con alta variación y considera acciones de ajuste presupuestal.</p>
+        </body></html>
+        """
 
-    st.download_button(
+        st.download_button(
             label="📄 Descargar Informe",
             data=resumen,
             file_name="informe_gastos.html",
             mime="text/html"
         )
 
-    st.download_button(
+        st.download_button(
             label="📄 Descargar Informe",
             data=resumen,
             file_name="informe_gastos.md",
