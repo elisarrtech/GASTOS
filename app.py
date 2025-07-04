@@ -45,6 +45,8 @@ df["Variación (%)"] = df.apply(calcular_variacion, axis=1)
 
 with st.sidebar:
     st.header("Filtros")
+    año_filtro = st.selectbox("Año", ["Todos"] + sorted(df["Año"].unique()))
+    banco_filtro = st.selectbox("Banco", ["Todos"] + sorted(df["Banco"].unique()))
     categoria_filtro = st.selectbox("Categoría", ["Todas"] + sorted(df["Categoría"].unique()))
     mes_filtro = st.selectbox("Mes", ["Todos"] + sorted(df["Mes"].unique()))
     estado_filtro = st.selectbox("Estado", ["Todos"] + sorted(df["Estado"].unique()))
@@ -66,6 +68,10 @@ with tab1:
         df_filtrado = df_filtrado[df_filtrado["Concepto"].str.contains(busqueda_rapida, case=False, na=False)]
 
     # Aplicar filtros avanzados
+    if año_filtro != "Todos":
+        df_filtrado = df_filtrado[df_filtrado["Año"] == int(año_filtro)]
+    if banco_filtro != "Todos":
+        df_filtrado = df_filtrado[df_filtrado["Banco"] == banco_filtro]
     if categoria_filtro != "Todas":
         df_filtrado = df_filtrado[df_filtrado["Categoría"] == categoria_filtro]
     if mes_filtro != "Todos":
@@ -147,13 +153,20 @@ with tab1:
 
     st.download_button("📥 Descargar CSV", data=edited_df.to_csv(index=False), file_name="gastos_exportados.csv")
 
+    # Exportar a Excel
+    import io
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        edited_df.to_excel(writer, index=False, sheet_name='Gastos')
+    st.download_button("📥 Exportar a Excel", data=output.getvalue(), file_name="gastos_exportados.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"), file_name="gastos_exportados.csv")
+
 with tab2:
     st.subheader("📈 Histórico de Gastos por Mes")
 
-    resumen_mensual = df.groupby("Mes")["Monto"].sum().reset_index()
+    resumen_mensual = df.groupby(["Año", "Mes"])["Monto"].sum().reset_index()
     st.dataframe(resumen_mensual, use_container_width=True)
 
-    fig_hist = px.line(resumen_mensual, x="Mes", y="Monto", title="Evolución de Gastos por Mes", markers=True)
+    fig_hist = px.line(resumen_mensual, x="Mes", y="Monto", color="Año", title="Evolución de Gastos por Mes", markers=True)
     st.plotly_chart(fig_hist, use_container_width=True, key="hist_grafico")
 
     st.divider()
