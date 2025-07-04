@@ -1,3 +1,33 @@
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+
+# Carga de datos
+@st.cache_data
+def cargar_datos():
+    # ... aquí tu código de carga de CSV y procesamiento
+    return df, meses
+
+df, meses = cargar_datos()
+
+# === FILTROS ===
+busqueda_rapida = st.sidebar.text_input("🔍 Búsqueda rápida por concepto")
+informe_alertas_only = st.sidebar.checkbox("🔍 Solo conceptos con sobrepresupuesto")
+st.sidebar.header("Filtros")
+categoria_filtro = st.sidebar.selectbox("Categoría", ["Todas"] + sorted(df["Categoría"].unique()))
+estado_filtro = st.sidebar.selectbox("Estado", ["Todos", "PAGADO", "NO PAGADO"])
+variacion_filtro = st.sidebar.selectbox("Variación (%)", ["Todos", "Positiva", "Negativa"])
+mes_filtro = st.sidebar.selectbox("Mes", ["Todos"] + meses)
+presupuesto_filtro = st.sidebar.slider("Filtrar por presupuesto", min_value=0, max_value=int(df["Presupuesto"].max()), value=(0, int(df["Presupuesto"].max())))
+
+# Botón para descargar informe
+if st.sidebar.button("📄 Descargar Informe HTML"):
+    if informe_alertas_only:
+        df_informe = df[df["Total"] > df["Presupuesto"]]
+    else:
+        df_informe = df
+    resumen_html = generar_informe_html(df_informe)
+    st.sidebar.download_button("📄 Descargar Informe", data=resumen_html, file_name="informe_gastos.html", mime="text/html")
 # === Resto del Dashboard ===
 
 # Título y KPIs
