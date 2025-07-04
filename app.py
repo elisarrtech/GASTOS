@@ -18,7 +18,7 @@ def cargar_datos():
         st.error(f"Error al cargar los datos: {e}")
         return None
 
-# --- Limpiar y convertir montos a números ---
+# --- Limpiar montos a números ---
 def limpiar_montos(df):
     meses = ['Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
     for mes in meses:
@@ -31,25 +31,32 @@ df = cargar_datos()
 if df is not None and not df.empty:
     st.success("Datos cargados correctamente.")
 
-    # Mostrar resumen rápido
-    st.markdown("### 📋 Resumen General")
-    st.write(f"- **Total de conceptos:** {len(df)}")
+    # Asegurar que haya una columna de Presupuesto
+    if 'Presupuesto' not in df.columns:
+        df['Presupuesto'] = ""
 
-    # Limpiar montos para poder operar con ellos
+    # Limpiar montos para operaciones
     df_clean = limpiar_montos(df.copy())
 
-    # Calcular total por categoría
+    # Mostrar KPIs generales
+    st.markdown("### 📊 KPIs Generales")
+    total_gastos = df_clean[['Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']].sum().sum()
+    promedio_mensual = total_gastos / 7
+    st.metric(label="Total de gastos anuales", value=f"${total_gastos:,.2f}")
+    st.metric(label="Promedio mensual", value=f"${promedio_mensual:,.2f}")
+
+    # Mostrar totales por categoría
     st.markdown("### 🧮 Totales por categoría")
     df_total_categoria = df_clean.groupby('Categoría')[['Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']].sum()
+    df_total_categoria['Total Anual'] = df_total_categoria.sum(axis=1)
     st.dataframe(df_total_categoria, use_container_width=True)
 
-    # Gráfico de barras
-    st.markdown("### 📊 Total de gastos por categoría")
-    df_total_categoria['Total'] = df_total_categoria.sum(axis=1)
-    fig = px.bar(df_total_categoria.reset_index(), x='Categoría', y='Total', text_auto=True)
+    # Gráfico comparativo por categoría
+    st.markdown("### 📈 Comparativa de gastos por categoría")
+    fig = px.bar(df_total_categoria.reset_index(), x='Categoría', y='Total Anual', text_auto=True)
     st.plotly_chart(fig, use_container_width=True)
 
-    # Mostrar datos por categoría
+    # Mostrar datos editables por categoría
     if 'Categoría' in df.columns:
         categorias_unicas = df['Categoría'].unique()
     else:
