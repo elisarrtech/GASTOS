@@ -125,13 +125,19 @@ if not edited_df.empty:
     fig_pie = px.pie(grafico_categoria, names="Categoría", values="Total", title="Distribución por Categoría")
     st.plotly_chart(fig_pie, use_container_width=True)
 
-    # === ESTADO DE PAGOS - BARRA DE PROGRESO ===
-    total_pagado = len(edited_df[edited_df["Estado"] == "Pagado"])
-    total_saldo = len(edited_df[edited_df["Estado"] == "Sin pagar"])
+  # === ESTADO de PAGOS - BARRA DE PROGRESO ===
+st.subheader("📊 Estado de Pagos")
 
-    st.subheader("📊 Estado de Pagos")
-    st.progress(total_pagado / (total_pagado + total_saldo))
-    st.caption(f"{total_pagado} de {total_pagado + total_saldo} conceptos pagados ({int((total_pagado / (total_pagado + total_saldo) * 100))}% pagados)")
+total_pagado = len(edited_df[edited_df["Estado"] == "Pagado"])
+total_saldo = len(edited_df[edited_df["Estado"] == "Sin pagar"])
+total_conceptos_estado = total_pagado + total_saldo
+
+if total_conceptos_estado > 0:
+    porcentaje_pagado = total_pagado / total_conceptos_estado
+    st.progress(porcentaje_pagado)
+    st.caption(f"{total_pagado} de {total_conceptos_estado} conceptos pagados ({int(porcentaje_pagado * 100)}%)")
+else:
+    st.info("⚠️ No hay registros para mostrar estado de pagos.")
 
     # === TABLA CON ESTILO DE ESTADO ===
     styled_df = edited_df.style.applymap(colorear_estado, subset=["Estado"])
