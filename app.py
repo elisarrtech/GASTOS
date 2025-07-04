@@ -1,18 +1,74 @@
+# IMPORTACIONES
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# Carga de datos
-@st.cache_data
+# === FUNCIONES AUXILIARES ===
 def cargar_datos():
-    # ... aquí tu código de carga de CSV y procesamiento
+    df = pd.read_csv("data/gastos_mensuales.csv")
+    meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+    for mes in meses:
+        df[mes] = df[mes].replace('[\$,]', '', regex=True).astype(float)
+    df["Total"] = df[meses].sum(axis=1)
+    df["Variación (%)"] = round(((df["Total"] - df["Presupuesto"]) / df["Presupuesto"]) * 100, 2)
     return df, meses
 
-df, meses = cargar_datos()
+def colorear_estado(val):
+    if val == "PAGADO":
+        return 'background-color: #d4edda; color: #155724; text-align: center'
+    elif val == "NO PAGADO":
+        return 'background-color: #f8d7da; color: #721c24; text-align: center'
+    return ''
 
-# === FILTROS ===
+def generar_informe_html(df):
+    resumen_total = df["Total"].sum()
+    resumen_pagado = df[df["Estado"] == "PAGADO"]["Total"].sum()
+    resumen_no_pagado = df[df["Estado"] == "NO PAGADO"]["Total"].sum()
+
+    return f"""
+    <html><head><style>
+    body {{ font-family: Arial, sans-serif; margin: 20px; color: #333; }}
+    h1 {{ color: #2c3e50; }}
+    table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+    th, td {{ border: 1px solid #ccc; padding: 8px; text-align: left; }}
+    th {{ background-color: #f5f5f5; }}
+    .summary {{ background-color: #eef; padding: 10px; margin-top: 20px; }}
+    </style></head><body>
+    <h1>Informe de Gastos</h1>
+
+    <div class="summary">
+    <h2>Resumen General</h2>
+    <p><strong>Total Anual:</strong> ${resumen_total:,.2f}</p>
+    <p><strong>Total Pagado:</strong> ${resumen_pagado:,.2f}</p>
+    <p><strong>No Pagado:</strong> ${resumen_no_pagado:,.2f}</p>
+    </div>
+
+    <div class="summary">
+    <h2>Sugerencias de Mejora</h2>
+    <ul>
+        <li>Optimizar conceptos con variaciones positivas elevadas.</li>
+        <li>Ajustar presupuestos sistemáticamente superados.</li>
+        <li>Controlar categorías con mayor gasto anual.</li>
+        <li>Revisar pagos para evitar acumulaciones de saldos.</li>
+    </ul>
+    </div>
+
+    <h2>Detalle de Conceptos</h2>
+    {df.to_html(index=False)}
+
+    </body></html>
+    """
+
+# === CARGA DE DATOS ===
+df, meses = cargar_datos()
+total_anual = df[meses].sum().sum()
+total_pagado = df[df["Estado"] == "PAGADO"][meses].sum().sum()
+total_no_pagado = df[df["Estado"] == "NO PAGADO"][meses].sum().sum()
+
+# === SIDEBAR ===
 busqueda_rapida = st.sidebar.text_input("🔍 Búsqueda rápida por concepto")
 informe_alertas_only = st.sidebar.checkbox("🔍 Solo conceptos con sobrepresupuesto")
+
 st.sidebar.header("Filtros")
 categoria_filtro = st.sidebar.selectbox("Categoría", ["Todas"] + sorted(df["Categoría"].unique()))
 estado_filtro = st.sidebar.selectbox("Estado", ["Todos", "PAGADO", "NO PAGADO"])
@@ -20,14 +76,25 @@ variacion_filtro = st.sidebar.selectbox("Variación (%)", ["Todos", "Positiva", 
 mes_filtro = st.sidebar.selectbox("Mes", ["Todos"] + meses)
 presupuesto_filtro = st.sidebar.slider("Filtrar por presupuesto", min_value=0, max_value=int(df["Presupuesto"].max()), value=(0, int(df["Presupuesto"].max())))
 
-# Botón para descargar informe
+# === APLICAR FILTROS ===
+df_filtrado = df.copy()
+if busqueda_rapida:
+    df_filtrado = df_filtrado[df_filtrado["Concepto"].str.contains(busqueda_rapida, case=False, na=False)]
+if categoria_filtro != "Todas":
+    df_filtrado = df_filtrado[df_filtrado["Categoría"] == categoria_filtro]
+if estado_filtro != "Todos":
+    df_filtrado = df_filtrado[df_filtrado["Estado"] == estado_filtro]
+if variacion_filtro != "Todos":
+    df_filtrado = df_filtrado[df_filtrado["Variación (%)"] > 0] if variacion_filtro == "Positiva" else df_filtrado[df_filtrado["Variación (%)"] < 0]
+if mes_filtro != "Todos":
+    df_filtrado = df_filtrado[df_filtrado[mes_filtro] > 0]
+df_filtrado = df_filtrado[(df_filtrado["Presupuesto"] >= presupuesto_filtro[0]) & (df_filtrado["Presupuesto"] <= presupuesto_filtro[1])]
+
 if st.sidebar.button("📄 Descargar Informe HTML"):
-    if informe_alertas_only:
-        df_informe = df[df["Total"] > df["Presupuesto"]]
-    else:
-        df_informe = df
+    df_informe = df_filtrado[df_filtrado["Total"] > df_filtrado["Presupuesto"]] if informe_alertas_only else df_filtrado
     resumen_html = generar_informe_html(df_informe)
     st.sidebar.download_button("📄 Descargar Informe", data=resumen_html, file_name="informe_gastos.html", mime="text/html")
+
 # === Resto del Dashboard ===
 
 # Título y KPIs
