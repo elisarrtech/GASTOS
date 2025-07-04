@@ -1,3 +1,5 @@
+import streamlit as st  # ⬅️ Esta línea es obligatoria
+
 # Estilos personalizados con CSS
 st.markdown("""
 <style>
