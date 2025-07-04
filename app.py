@@ -23,11 +23,10 @@ if df is not None:
 
     # Limpiar filas vacías
     df.columns = df.columns.str.strip()
-    df = df.dropna(how='all')
+    df = df.dropna(how='all').reset_index(drop=True)
 
     # --- Procesar categorías ---
     categoria_actual = None
-    subcategorias = []
 
     for index, row in df.iterrows():
         primera_celda = str(row.iloc[0]).strip()
@@ -35,6 +34,7 @@ if df is not None:
         if primera_celda and not primera_celda.startswith("Unnamed"):
             categoria_actual = primera_celda
             with st.expander(f"📁 {categoria_actual}", expanded=False):
+                # Usamos .loc[] o simplemente row.name si no es NaN
                 st.dataframe(df.iloc[[index]], use_container_width=True)
         else:
             continue
