@@ -1,37 +1,20 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import os
-
-# Configuración inicial
-st.set_page_config(page_title="📊 Gastos Mensuales", layout="wide")
-
-# Ruta del archivo
-ARCHIVO_GASTOS = "data/gastos.csv"
 
 # Cargar datos
 @st.cache_data
 def cargar_datos():
-    if not os.path.exists(ARCHIVO_GASTOS):
-        return pd.DataFrame(columns=["Categoría", "Concepto", "Junio", "Julio", "Agosto",
-                                      "Septiembre", "Octubre", "Noviembre", "Diciembre"])
-    return pd.read_csv(ARCHIVO_GASTOS)
+    return pd.read_csv("data/gastos_mensuales.csv")
 
 df = cargar_datos()
-
-# Limpiar valores y convertir a números
-def limpiar_monto(valor):
-    try:
-        return float(str(valor).replace("$", "").replace(",", ""))
-    except:
-        return 0.0
 
 # Meses disponibles
 meses = ["Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 
 # Convertir meses a numéricos
 for mes in meses:
-    df[mes] = df[mes].apply(limpiar_monto)
+    df[mes] = df[mes].apply(lambda x: float(str(x).replace("$", "").replace(",", "")) if isinstance(x, str) else x)
 
 # Título
 st.title("📄 Gestión de Gastos Mensuales")
@@ -57,7 +40,7 @@ edited_df = st.data_editor(df_filtrado, use_container_width=True, num_rows="dyna
 
 # Guardar cambios
 if st.button("💾 Guardar Cambios"):
-    edited_df.to_csv(ARCHIVO_GASTOS, index=False)
+    edited_df.to_csv("data/gastos_mensuales.csv", index=False)
     st.success("✅ Datos guardados correctamente.")
     st.cache_data.clear()  # Limpiar caché para recargar datos actualizados
 
@@ -84,30 +67,7 @@ if not edited_df.empty:
     st.plotly_chart(fig_bar, use_container_width=True)
 
     # Gráfico de torta por categoría
-    st.subheader("pies Distribución por Categoría")
+    st.subheader("🥧 Distribución por Categoría")
     grafico_categoria = edited_df.groupby("Categoría")[meses].sum().sum(axis=1).reset_index(name="Total")
     fig_pie = px.pie(grafico_categoria, names="Categoría", values="Total", title="Distribución por Categoría")
     st.plotly_chart(fig_pie, use_container_width=True)
-
-# Formulario para agregar nuevo concepto
-st.subheader("➕ Añadir Nuevo Concepto")
-with st.form("form_nuevo_concepto"):
-    nueva_categoria = st.selectbox("Categoría", df["Categoría"].unique().tolist() + ["Otra..."])
-    if nueva_categoria == "Otra...":
-        nueva_categoria = st.text_input("Escribe la nueva categoría")
-    nuevo_concepto = st.text_input("Nombre del Concepto")
-    nuevos_valores = [st.number_input(f"{mes}", min_value=0.0, format="%.2f") for mes in meses]
-    submitted = st.form_submit_button("Agregar")
-
-    if submitted and nuevo_concepto:
-        nuevo_registro = {
-            "Categoría": nueva_categoria,
-            "Concepto": nuevo_concepto,
-            **{mes: val for mes, val in zip(meses, nuevos_valores)}
-        }
-        df_nuevo = pd.DataFrame([nuevo_registro])
-        df_final = pd.concat([edited_df, df_nuevo], ignore_index=True)
-        df_final.to_csv(ARCHIVO_GASTOS, index=False)
-        st.success("✅ Concepto agregado y guardado.")
-        st.cache_data.clear()
-        st.experimental_rerun()
