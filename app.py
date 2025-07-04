@@ -84,7 +84,7 @@ if not edited_df.empty:
     st.plotly_chart(fig_bar, use_container_width=True)
 
     # Gráfico de torta por categoría
-    st.subheader("🥧 Distribución por Categoría")
+    st.subheader("pies Distribución por Categoría")
     grafico_categoria = edited_df.groupby("Categoría")[meses].sum().sum(axis=1).reset_index(name="Total")
     fig_pie = px.pie(grafico_categoria, names="Categoría", values="Total", title="Distribución por Categoría")
     st.plotly_chart(fig_pie, use_container_width=True)
