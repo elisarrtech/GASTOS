@@ -34,7 +34,10 @@ def enviar_alerta_email(destinatario, asunto, mensaje):
 # === CARGA DE DATOS ===
 @st.cache_data
 def cargar_datos():
-    return pd.read_csv("data/gastos_mensuales.csv")
+    df = pd.read_csv("data/gastos_mensuales.csv")
+    df["Monto"] = df["Monto"].replace('[\$,]', '', regex=True).astype(float)
+    df["Presupuesto"] = df["Presupuesto"].replace('[\$,]', '', regex=True).astype(float)
+    return df
 
 def calcular_alertas(df):
     alertas = df.groupby("Concepto").agg({"Monto": "sum", "Presupuesto": "max"}).reset_index()
@@ -56,8 +59,8 @@ df = cargar_datos()
 
 with st.sidebar:
     st.header("Filtros")
-    categoria_filtro = st.selectbox("Categoría", ["Todas"] + list(df["Categoría"].unique()))
-    mes_filtro = st.selectbox("Mes", ["Todos"] + list(df["Mes"].unique()))
+    categoria_filtro = st.selectbox("Categoría", ["Todas"] + sorted(df["Categoría"].unique()))
+    mes_filtro = st.selectbox("Mes", ["Todos"] + sorted(df["Mes"].unique()))
 
 # === TABS ===
 tab1, tab2 = st.tabs(["Dashboard Principal", "Histórico Mensual"])
@@ -105,7 +108,7 @@ with tab1:
     st.plotly_chart(fig_cat, use_container_width=True)
 
     st.subheader("💼 Nómina por Quincena")
-    df_nomina = edited_df[edited_df["Categoría"] == "Nómina"]
+    df_nomina = edited_df[edited_df["Categoría"] == "Nóminas"]
     if not df_nomina.empty:
         gasto_nomina = df_nomina.groupby(["Mes", "Quincena"])["Monto"].sum().reset_index()
         fig_nomina = px.bar(gasto_nomina, x="Mes", y="Monto", color="Quincena", barmode="group", title="Nómina por Quincena")
