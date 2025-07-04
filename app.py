@@ -18,6 +18,20 @@ st.markdown("""
         border-radius: 8px;
         padding: 0.4em 0.8em;
     }
+    .estado-pagado {
+        background-color: #d4edda;
+        color: #155724;
+        padding: 0.5em;
+        border-radius: 4px;
+        text-align: center;
+    }
+    .estado-no-pagado {
+        background-color: #f8d7da;
+        color: #721c24;
+        padding: 0.5em;
+        border-radius: 4px;
+        text-align: center;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -30,9 +44,9 @@ def limpiar_monto(valor):
 
 def colorear_estado(val):
     if val == "PAGADO":
-        return 'background-color: #d4edda; color: #155724'
+        return 'background-color: #d4edda; color: #155724; text-align: center'
     elif val == "NO PAGADO":
-        return 'background-color: #f8d7da; color: #721c24'
+        return 'background-color: #f8d7da; color: #721c24; text-align: center'
     else:
         return ''
 
@@ -44,7 +58,7 @@ def cargar_datos():
 
 df = cargar_datos()
 
-# Limpiar montos
+# Meses y limpieza
 meses = ["Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 for mes in meses:
     df[mes] = df[mes].apply(limpiar_monto)
@@ -124,13 +138,22 @@ if not edited_df.empty:
     if total_conceptos_estado > 0:
         porcentaje_pagado = total_pagado / total_conceptos_estado
         st.progress(porcentaje_pagado)
-        st.caption(f"{total_pagado} de {total_conceptos_estado} conceptos pagados ({int(porcentaje_pagado * 100)}%)")
+        st.caption(f"{total_pagado} de {total_conceptos_estado} pagados ({int(porcentaje_pagado * 100)}%)")
     else:
-        st.info("⚠️ No hay registros para mostrar estado de pagos.")
+        st.info("⚠️ No hay registros para mostrar progreso.")
 
     # === TABLA CON ESTILO DE ESTADO ===
     styled_df = edited_df.style.applymap(colorear_estado, subset=["Estado"])
     st.dataframe(styled_df, use_container_width=True)
+
+    # === EXPORTAR A CSV ===
+    st.subheader("📤 Exportar Datos")
+    st.download_button(
+        label="📥 Descargar CSV",
+        data=edited_df.to_csv(index=False),
+        file_name="gastos_exportados.csv",
+        mime="text/csv"
+    )
 
     # === ACTUALIZAR ESTADO INLINE EN CADA FILA ===
     st.subheader("🔄 Actualiza el estado de cada gasto")
