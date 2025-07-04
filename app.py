@@ -118,26 +118,36 @@ with tab1:
 
     with st.expander("📄 Generar Informes"):
         resumen = f"""
-# Informe de Gastos Mensuales
+<html><body>
+<h1>Informe de Gastos Mensuales</h1>
 
-## Indicadores Clave
-- 💸 Total Anual: ${total_anual:,.2f}
-- ✅ Total Pagado: ${total_pagado:,.2f}
-- ⏳ No Pagado: ${total_no_pagado:,.2f}
+<h2>Indicadores Clave</h2>
+<ul>
+<li>Total Anual: ${total_anual:,.2f}</li>
+<li>Total Pagado: ${total_pagado:,.2f}</li>
+<li>No Pagado: ${total_no_pagado:,.2f}</li>
+</ul>
 
-## Recomendaciones
-- ⚠️ Revisa los conceptos con mayor gasto.
-- 🔧 Ajusta presupuestos con variación positiva mayor al 10%.
-- 📊 Analiza los gastos por categoría y mes.
+<h2>Recomendaciones</h2>
+<ul>
+<li>Revisa los conceptos con mayor gasto.</li>
+<li>Ajusta presupuestos con variación positiva mayor al 10%.</li>
+<li>Analiza los gastos por categoría y mes.</li>
+</ul>
 
-## Detalle de Gastos
+<h2>Detalle de Gastos</h2>
+{edited_df[['Categoría', 'Concepto', 'Mes', 'Monto', 'Presupuesto', 'Estado', 'Variación (%)']].to_html(index=False)}
 
-{edited_df[['Categoría', 'Concepto', 'Mes', 'Monto', 'Presupuesto', 'Estado', 'Variación (%)']].to_string(index=False)}
-
-
----
-_Sugerencia:_ Monitorea mensualmente los conceptos con alta variación y considera acciones de ajuste presupuestal.
+<p><em>Sugerencia:</em> Monitorea mensualmente los conceptos con alta variación y considera acciones de ajuste presupuestal.</p>
+</body></html>
 """
+
+        st.download_button(
+            label="📄 Descargar Informe",
+            data=resumen,
+            file_name="informe_gastos.html",
+            mime="text/html"
+        )
 
         st.download_button(
             label="📄 Descargar Informe",
