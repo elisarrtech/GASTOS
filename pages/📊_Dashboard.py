@@ -82,3 +82,12 @@ def colorear_estado(val):
         return 'background-color: #f8d7da; color: #721c24'  # Rojo claro
     else:
         return ''
+
+# Solo mostrar columnas relevantes y aplicar estilo
+columnas_estado = [col for col in df_filtrado.columns if col.startswith("Estado_")]
+df_mostrar = df_filtrado.drop(columns=columnas_estado, errors='ignore')
+
+# Mostrar tabla con estilo
+st.subheader("📋 Registros Filtrados")
+styled_df = df_mostrar.style.applymap(colorear_estado, subset=[col for col in df_mostrar.columns if "Estado" in col])
+st.dataframe(styled_df)
