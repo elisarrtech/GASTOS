@@ -118,33 +118,32 @@ with tab1:
 
     with st.expander("📄 Generar Informes"):
         resumen = f"""
-INFORME DE GASTOS MENSUALES
+# Informe de Gastos Mensuales
 
-Indicadores Clave:
-- Total Anual: ${total_anual:,.2f}
-- Total Pagado: ${total_pagado:,.2f}
-- Total No Pagado: ${total_no_pagado:,.2f}
+## Indicadores Clave
+- 💸 Total Anual: ${total_anual:,.2f}
+- ✅ Total Pagado: ${total_pagado:,.2f}
+- ⏳ No Pagado: ${total_no_pagado:,.2f}
 
-Análisis y Recomendaciones:
-- Revisa los conceptos con mayor gasto y verifica si están dentro del presupuesto.
-- Ajusta los presupuestos de los conceptos con variación positiva mayor al 10%.
-- Analiza los gastos por categoría y mes para identificar patrones o desviaciones.
+## Recomendaciones
+- ⚠️ Revisa los conceptos con mayor gasto.
+- 🔧 Ajusta presupuestos con variación positiva mayor al 10%.
+- 📊 Analiza los gastos por categoría y mes.
 
-Detalle de Gastos:
+## Detalle de Gastos
 
-{edited_df[['Categoría', 'Concepto', 'Mes', 'Monto', 'Presupuesto', 'Estado', 'Variación (%)']].to_string(index=False)}
+{edited_df[['Categoría', 'Concepto', 'Mes', 'Monto', 'Presupuesto', 'Estado', 'Variación (%)']].to_markdown(index=False)}
 
-Sugerencia:
-Monitorea mensualmente los conceptos con alta variación y considera acciones de ajuste presupuestal.
+---
+_Sugerencia:_ Monitorea mensualmente los conceptos con alta variación y considera acciones de ajuste presupuestal.
 """
 
         st.download_button(
             label="📄 Descargar Informe",
             data=resumen,
-            file_name="informe_gastos.txt",
-            mime="text/plain"
+            file_name="informe_gastos.md",
+            mime="text/markdown"
         )
-
     st.divider()
 
     gasto_mes = edited_df.groupby("Mes")["Monto"].sum().reset_index()
