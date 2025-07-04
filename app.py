@@ -148,3 +148,31 @@ with tab2:
 
     fig_hist = px.line(resumen_mensual, x="Mes", y="Monto", title="Evolución de Gastos por Mes", markers=True)
     st.plotly_chart(fig_hist, use_container_width=True)
+
+
+# [Código original sin cambios hasta "Evolución de Gastos por Mes"]
+
+with tab2:
+    st.subheader("📈 Histórico de Gastos por Mes")
+
+    resumen_mensual = df.groupby("Mes")["Monto"].sum().reset_index()
+    st.dataframe(resumen_mensual, use_container_width=True)
+
+    fig_hist = px.line(resumen_mensual, x="Mes", y="Monto", title="Evolución de Gastos por Mes", markers=True)
+    st.plotly_chart(fig_hist, use_container_width=True)
+
+    st.divider()
+
+    st.subheader("📊 Comparativo: Gastado vs Presupuesto por Mes")
+
+    comparativo = df.groupby("Mes").agg({"Monto": "sum", "Presupuesto": "sum"}).reset_index()
+    fig_comp = px.bar(
+        comparativo.melt(id_vars="Mes", value_vars=["Monto", "Presupuesto"], var_name="Tipo", value_name="Total"),
+        x="Mes",
+        y="Total",
+        color="Tipo",
+        barmode="group",
+        title="Comparativo Mensual: Gastado vs Presupuesto"
+    )
+    st.plotly_chart(fig_comp, use_container_width=True)
+
