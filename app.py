@@ -9,31 +9,37 @@ st.title("📊 Dashboard de Gastos Mensuales")
 @st.cache_data
 def cargar_datos():
     try:
+        # Leer el archivo sin header
         df = pd.read_excel("data/HOJA DE GASTOS.xlsx", header=None, engine='openpyxl')
-        df.columns = df.iloc[0]
-        df = df.drop(0).reset_index(drop=True)
 
-        # Limpiar filas vacías y detectar categorías
-        categorias = []
+        # Limpiar filas completamente vacías
+        df = df.dropna(how='all').reset_index(drop=True)
+
+        # Detectar categorías y construir DataFrame final
         categoria_actual = None
-        cleaned_rows = []
+        registros = []
 
         for idx, row in df.iterrows():
-            val = str(row.iloc[0]).strip()
-            if val and not val.startswith("Unnamed") and not val.isdigit() and len(val) < 30:
+            val = str(row[0]).strip() if not pd.isna(row[0]) else ""
+
+            if val and len(val) < 50 and not val.startswith("Unnamed") and not val.isdigit():
                 categoria_actual = val
-            categorias.append(categoria_actual)
-            cleaned_rows.append(row.tolist())
+                continue
 
-        df_clean = pd.DataFrame(cleaned_rows, columns=df.columns)
-        df_clean['Categoría'] = categorias
-        df_clean.columns = ['Concepto', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre', 'Categoría']
+            if categoria_actual and len(row) >= 2:
+                concepto = str(row[0]).strip() if not pd.isna(row[0]) else ""
+                if concepto == "":
+                    continue
 
-        # Filtrar encabezados repetidos y filas irrelevantes
-        df_clean = df_clean[~df_clean['Concepto'].str.contains('GASTO|CONCEPTO|NOMBRE|---', na=True)]
-        df_clean = df_clean[df_clean['Concepto'].notna() & (df_clean['Concepto'] != '')]
+                # Asegurar que siempre haya 9 columnas (Concepto + 8 meses)
+                data = [categoria_actual, concepto] + [row[i] if i < len(row) else "" for i in range(1, 9)]
+                registros.append(data)
 
-        return df_clean[['Categoría', 'Concepto', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']]
+        # Crear nuevo DataFrame con estructura limpia
+        columnas = ['Categoría', 'Concepto', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+        df_limpio = pd.DataFrame(registros, columns=columnas)
+
+        return df_limpio
 
     except Exception as e:
         st.error(f"Error al cargar los datos: {e}")
@@ -57,3 +63,4 @@ if df is not None:
 
 else:
     st.warning("No se pudieron cargar los datos.")
+    
