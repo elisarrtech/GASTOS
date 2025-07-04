@@ -31,7 +31,7 @@ def cargar_datos():
                 if concepto == "":
                     continue
 
-                # Asegurar que siempre haya 9 columnas (Concepto + 8 meses)
+                # Asegurar que siempre haya 8 columnas (Concepto + 7 meses)
                 data = [categoria_actual, concepto] + [row[i] if i < len(row) else "" for i in range(1, 9)]
                 registros.append(data)
 
@@ -51,6 +51,13 @@ df = cargar_datos()
 if df is not None:
     st.success("Datos cargados correctamente.")
 
+    # Mostrar resumen rápido
+    st.markdown("### 📋 Resumen General")
+    total_categorias = df['Categoría'].nunique()
+    total_conceptos = len(df)
+    st.write(f"- **Total de categorías:** {total_categorias}")
+    st.write(f"- **Total de conceptos:** {total_conceptos}")
+
     # Mostrar datos por categoría
     categorias_unicas = df['Categoría'].unique()
 
@@ -58,9 +65,6 @@ if df is not None:
         with st.expander(f"📁 {categoria}", expanded=False):
             df_categoria = df[df['Categoría'] == categoria].drop(columns=['Categoría']).reset_index(drop=True)
             edited_df = st.data_editor(df_categoria, use_container_width=True, key=f"edit_{categoria}")
-            st.write("Datos actualizados:")
-            st.dataframe(edited_df)
 
 else:
     st.warning("No se pudieron cargar los datos.")
-    
