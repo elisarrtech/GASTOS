@@ -33,21 +33,44 @@ if df is not None and not df.empty:
 
     # Asegurar que haya una columna de Presupuesto
     if 'Presupuesto' not in df.columns:
-        df['Presupuesto'] = ""
+        df['Presupuesto'] = 0
 
     # Limpiar montos para operaciones
     df_clean = limpiar_montos(df.copy())
 
-    # Mostrar KPIs generales
+    # ---- FILTROS ----
+    st.sidebar.header("🔍 Filtros")
+
+    # Filtro por categoría
+    categorias = ['Todas'] + list(df['Categoría'].unique())
+    categoria_seleccionada = st.sidebar.selectbox("Selecciona una categoría", categorias)
+
+    # Filtro por mes
+    meses = ['Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+    mes_seleccionado = st.sidebar.selectbox("Selecciona un mes", meses)
+
+    # Búsqueda por nombre
+    busqueda = st.sidebar.text_input("Buscar concepto", "")
+
+    # Aplicar filtros
+    df_filtrado = df.copy()
+    if categoria_seleccionada != 'Todas':
+        df_filtrado = df_filtrado[df_filtrado['Categoría'] == categoria_seleccionada]
+
+    if busqueda:
+        df_filtrado = df_filtrado[df_filtrado['Concepto'].str.contains(busqueda, case=False, na=False)]
+
+    # Mostrar KPIs generales o filtrados
     st.markdown("### 📊 KPIs Generales")
-    total_gastos = df_clean[['Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']].sum().sum()
+    total_gastos = df_clean[meses].sum().sum()
     promedio_mensual = total_gastos / 7
-    st.metric(label="Total de gastos anuales", value=f"${total_gastos:,.2f}")
-    st.metric(label="Promedio mensual", value=f"${promedio_mensual:,.2f}")
+    col1, col2 = st.columns(2)
+    col1.metric(label="Total de gastos anuales", value=f"${total_gastos:,.2f}")
+    col2.metric(label="Promedio mensual", value=f"${promedio_mensual:,.2f}")
 
     # Mostrar totales por categoría
     st.markdown("### 🧮 Totales por categoría")
-    df_total_categoria = df_clean.groupby('Categoría')[['Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']].sum()
+    df_total_categoria = df_clean.groupby('Categoría')[meses].sum()
     df_total_categoria['Total Anual'] = df_total_categoria.sum(axis=1)
     st.dataframe(df_total_categoria, use_container_width=True)
 
@@ -56,19 +79,16 @@ if df is not None and not df.empty:
     fig = px.bar(df_total_categoria.reset_index(), x='Categoría', y='Total Anual', text_auto=True)
     st.plotly_chart(fig, use_container_width=True)
 
-    # Mostrar datos editables por categoría
-    if 'Categoría' in df.columns:
-        categorias_unicas = df['Categoría'].unique()
-    else:
-        st.error("No se encontró la columna 'Categoría'. Verifica el archivo.")
-        st.stop()
+    # Mostrar tabla filtrada editable
+    st.markdown(f"### 🗂 Datos filtrados ({categoria_seleccionada} - {mes_seleccionado})")
+    df_editable = df_filtrado[['Concepto', mes_seleccionado]].copy()
+    edited_df = st.data_editor(df_editable, use_container_width=True)
 
-    for categoria in categorias_unicas:
-        with st.expander(f"📁 {categoria}", expanded=False):
-            df_categoria = df[df['Categoría'] == categoria].drop(columns=['Categoría']).reset_index(drop=True)
-            edited_df = st.data_editor(df_categoria, use_container_width=True, key=f"edit_{categoria}")
-            st.write("Datos actualizados:")
-            st.dataframe(edited_df)
+    # Mostrar gráfico de barras por concepto
+    if not df_editable.empty:
+        st.markdown("### 📊 Gastos por concepto")
+        fig_bar = px.bar(df_editable, x='Concepto', y=mes_seleccionado, text_auto=True)
+        st.plotly_chart(fig_bar, use_container_width=True)
 
 else:
     st.warning("No se pudieron cargar los datos o el archivo está vacío.")
