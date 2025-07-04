@@ -71,3 +71,26 @@ if not edited_df.empty:
     grafico_categoria = edited_df.groupby("Categoría")[meses].sum().sum(axis=1).reset_index(name="Total")
     fig_pie = px.pie(grafico_categoria, names="Categoría", values="Total", title="Distribución por Categoría")
     st.plotly_chart(fig_pie, use_container_width=True)
+
+# Formulario para agregar nuevo concepto
+st.subheader("➕ Añadir Nuevo Concepto")
+with st.form("form_nuevo_concepto"):
+    nueva_categoria = st.selectbox("Categoría", df["Categoría"].unique().tolist() + ["Otra..."])
+    if nueva_categoria == "Otra...":
+        nueva_categoria = st.text_input("Escribe la nueva categoría")
+    nuevo_concepto = st.text_input("Nombre del Concepto")
+    nuevos_valores = [st.number_input(f"{mes}", min_value=0.0, format="%.2f") for mes in meses]
+    submitted = st.form_submit_button("Agregar")
+
+    if submitted and nuevo_concepto:
+        nuevo_registro = {
+            "Categoría": nueva_categoria,
+            "Concepto": nuevo_concepto,
+            **{mes: val for mes, val in zip(meses, nuevos_valores)}
+        }
+        df_nuevo = pd.DataFrame([nuevo_registro])
+        df_final = pd.concat([edited_df, df_nuevo], ignore_index=True)
+        df_final.to_csv("data/gastos_mensuales.csv", index=False)
+        st.success("✅ Concepto agregado y guardado.")
+        st.cache_data.clear()
+        st.experimental_rerun()
