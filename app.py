@@ -2,6 +2,14 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
+# === IMPORTACIONES PERSONALIZADAS ===
+from utils.data_loader import cargar_datos, limpiar_monto
+from utils.styles import colorear_estado
+from utils.alerts import calcular_alertas
+
+# === CONFIGURACIÓN DE PÁGINA ===
+st.set_page_config(page_title="Dashboard de Gastos", layout="wide")
+
 # === ESTILOS PERSONALIZADOS ===
 st.markdown("""
 <style>
@@ -12,62 +20,18 @@ st.markdown("""
     h1, h2, h3 {
         color: #2c3e50;
     }
-    .stButton button {
-        background-color: #2980b9;
-        color: white;
-        border-radius: 8px;
-        padding: 0.4em 0.8em;
-    }
-    .estado-pagado {
-        background-color: #d4edda;
-        color: #155724;
-        padding: 0.5em;
-        border-radius: 4px;
-        text-align: center;
-    }
-    .estado-no-pagado {
-        background-color: #f8d7da;
-        color: #721c24;
-        padding: 0.5em;
-        border-radius: 4px;
-        text-align: center;
-    }
 </style>
 """, unsafe_allow_html=True)
 
-# === FUNCIONES AUXILIARES ===
-def limpiar_monto(valor):
-    try:
-        return float(str(valor).replace("$", "").replace(",", ""))
-    except:
-        return 0.0
-
-def colorear_estado(val):
-    if val == "PAGADO":
-        return 'background-color: #d4edda; color: #155724; text-align: center'
-    elif val == "NO PAGADO":
-        return 'background-color: #f8d7da; color: #721c24; text-align: center'
-    else:
-        return ''
-
 # === CARGA DE DATOS ===
-@st.cache_data
-def cargar_datos():
-    df = pd.read_csv("data/gastos_mensuales.csv")
-    return df
-
-df = cargar_datos()
+df = cargar_datos("data/gastos_mensuales.csv")
 
 # Meses y limpieza
 meses = ["Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 for mes in meses:
     df[mes] = df[mes].apply(limpiar_monto)
 
-# === INTERFAZ PRINCIPAL ===
-st.markdown("<h1 style='text-align: center;'>📄 Dashboard de Gastos Mensuales</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; font-size: 1.1em;'>Filtra, edita y analiza tus gastos fácilmente.</p>", unsafe_allow_html=True)
-
-# Sidebar - Filtros
+# === SIDEBAR - FILTROS ===
 with st.sidebar:
     st.header("🔍 Filtros")
     categoria_filtro = st.selectbox("Categoría", ["Todas"] + list(df["Categoría"].unique()))
@@ -80,8 +44,12 @@ if categoria_filtro != "Todas":
 if concepto_busqueda:
     df_filtrado = df_filtrado[df_filtrado["Concepto"].str.contains(concepto_busqueda, case=False, na=False)]
 
+# === LAYOUT PRINCIPAL ===
+st.markdown("<h1 style='text-align: center; color: #2c3e50;'>📊 Dashboard de Gastos Mensuales</h1>", unsafe_allow_html=True)
+st.caption("<p style='text-align: center; font-size: 1.1em;'>Monitorea, controla y analiza tus gastos de forma simple y visual.</p>", unsafe_allow_html=True)
+
 # === TABLA EDITABLE ===
-st.subheader("📋 Registros Filtrados")
+st.subheader("📋 Registros Filtrados (Editable)")
 edited_df = st.data_editor(
     df_filtrado,
     use_container_width=True,
@@ -95,79 +63,70 @@ edited_df = st.data_editor(
     key="editar_gastos"
 )
 
-# Guardar cambios
+# === GUARDAR CAMBIOS ===
 if st.button("💾 Guardar Cambios"):
     edited_df.to_csv("data/gastos_mensuales.csv", index=False)
     st.success("✅ Datos guardados correctamente.")
     st.cache_data.clear()
 
-# Solo graficar si hay datos
-if not edited_df.empty:
-    # KPIs
-    total_anual = edited_df[meses].sum().sum()
-    promedio_mensual = total_anual / len(meses)
-    total_conceptos = len(edited_df)
+# === KPIs ===
+st.divider()
+st.subheader("🔑 Indicadores Principales")
 
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("💰 Total Anual", f"${total_anual:,.2f}")
-    with col2:
-        st.metric("📅 Promedio Mensual", f"${promedio_mensual:,.2f}")
-    with col3:
-        st.metric("📌 Número de Conceptos", total_conceptos)
+total_anual = edited_df[meses].sum().sum()
+promedio_mensual = total_anual / len(meses)
+total_conceptos = len(edited_df)
+total_pagado = edited_df[edited_df["Estado"] == "PAGADO"][meses].sum().sum()
+total_no_pagado = edited_df[edited_df["Estado"] == "NO PAGADO"][meses].sum().sum()
 
-    # Gráfico de barras por mes
-    st.subheader("📉 Gastos por Mes")
-    grafico_barras = edited_df[meses].sum().reset_index()
-    grafico_barras.columns = ["Mes", "Total"]
-    fig_bar = px.bar(grafico_barras, x="Mes", y="Total", title="Gasto Total por Mes", color="Mes")
-    st.plotly_chart(fig_bar, use_container_width=True)
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("💸 Total Gastado Anual", f"${total_anual:,.2f}")
+col2.metric("💰 Total Pagado", f"${total_pagado:,.2f}")
+col3.metric("⏳ Pendiente por Pagar", f"${total_no_pagado:,.2f}")
+col4.metric("📅 Promedio Mensual", f"${promedio_mensual:,.2f}")
 
-    # Gráfico de torta por categoría
-    st.subheader("🥧 Distribución por Categoría")
-    grafico_categoria = edited_df.groupby("Categoría")[meses].sum().sum(axis=1).reset_index(name="Total")
-    fig_pie = px.pie(grafico_categoria, names="Categoría", values="Total", title="Distribución por Categoría")
-    st.plotly_chart(fig_pie, use_container_width=True)
+st.divider()
 
-    # === ESTADO DE PAGOS - BARRA DE PROGRESO ===
-    total_pagado = len(edited_df[edited_df["Estado"] == "PAGADO"])
-    total_saldo = len(edited_df[edited_df["Estado"] == "NO PAGADO"])
-    total_conceptos_estado = total_pagado + total_saldo
+# === GRÁFICOS ===
+st.subheader("📈 Gastos por Mes")
+gastos_por_mes = edited_df[meses].sum().reset_index()
+gastos_por_mes.columns = ["Mes", "Total"]
+fig_bar = px.bar(gastos_por_mes, x="Mes", y="Total", title="Total por Mes", color="Mes")
+st.plotly_chart(fig_bar, use_container_width=True)
 
-    st.subheader("📊 Estado de Pagos")
-    if total_conceptos_estado > 0:
-        porcentaje_pagado = total_pagado / total_conceptos_estado
-        st.progress(porcentaje_pagado)
-        st.caption(f"{total_pagado} de {total_conceptos_estado} pagados ({int(porcentaje_pagado * 100)}%)")
-    else:
-        st.info("⚠️ No hay registros para mostrar progreso.")
+st.subheader("📊 Distribución por Categoría")
+gastos_por_categoria = edited_df.groupby("Categoría")[meses].sum().sum(axis=1).reset_index(name="Total")
+fig_pie = px.pie(gastos_por_categoria, names="Categoría", values="Total", title="Distribución por Categoría")
+st.plotly_chart(fig_pie, use_container_width=True)
 
-    # === TABLA CON ESTILO DE ESTADO ===
-    styled_df = edited_df.style.applymap(colorear_estado, subset=["Estado"])
-    st.dataframe(styled_df, use_container_width=True)
+st.divider()
 
-    # === EXPORTAR A CSV ===
-    st.subheader("📤 Exportar Datos")
-    st.download_button(
-        label="📥 Descargar CSV",
-        data=edited_df.to_csv(index=False),
-        file_name="gastos_exportados.csv",
-        mime="text/csv"
-    )
+# === ALERTAS DE PRESUPUESTO ===
+st.subheader("🚨 Alertas de Presupuesto")
+alertas_df = calcular_alertas(edited_df, meses)
 
-    # === ACTUALIZAR ESTADO INLINE EN CADA FILA ===
-    st.subheader("🔄 Actualiza el estado de cada gasto")
-    for index, row in edited_df.iterrows():
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            st.markdown(f"**{row['Concepto']}**")
-        with col2:
-            estado_actual = row.get("Estado", "NO PAGADO")
-            nuevo_estado = "PAGADO" if estado_actual == "NO PAGADO" else "NO PAGADO"
-            if st.button(f"{estado_actual} ➤ {nuevo_estado}", key=f"toggle_{index}"):
-                edited_df.at[index, "Estado"] = nuevo_estado
-                edited_df.to_csv("data/gastos_mensuales.csv", index=False)
-                st.rerun()
-
+if not alertas_df.empty:
+    st.warning("⚠️ ¡Hay conceptos que exceden su presupuesto!")
+    st.dataframe(alertas_df, use_container_width=True)
 else:
-    st.warning("⚠️ No hay datos que coincidan con los filtros aplicados.")
+    st.success("✅ Todos los conceptos están dentro del presupuesto.")
+
+st.divider()
+
+# === TABLA CON ESTADO COLOREADO ===
+st.subheader("📄 Tabla con Estado Visual")
+styled_df = edited_df.style.applymap(colorear_estado, subset=["Estado"])
+st.dataframe(styled_df, use_container_width=True)
+
+st.divider()
+
+# === EXPORTAR A CSV ===
+st.subheader("📤 Exportar Datos")
+st.download_button(
+    label="📥 Descargar CSV",
+    data=edited_df.to_csv(index=False),
+    file_name="gastos_exportados.csv",
+    mime="text/csv"
+)
+
+st.divider()
