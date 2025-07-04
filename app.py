@@ -154,7 +154,6 @@ resumen = f"""
 
 <h2>Detalle de Gastos</h2>
 {tabla_html}
-{edited_df[['Categoría', 'Concepto', 'Mes', 'Monto', 'Presupuesto', 'Estado', 'Variación (%)']].to_html(index=False)}
 
 <p><em>Sugerencia:</em> Monitorea mensualmente los conceptos con alta variación y considera acciones de ajuste presupuestal.</p>
 </body></html>
