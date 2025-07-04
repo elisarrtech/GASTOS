@@ -74,3 +74,11 @@ if not edited_df.empty:
     grafico_categoria = edited_df.groupby("Categoría")[meses].sum().sum(axis=1).reset_index(name="Total")
     fig_pie = px.pie(grafico_categoria, names="Categoría", values="Total", title="Distribución por Categoría")
     st.plotly_chart(fig_pie, use_container_width=True)
+
+def colorear_estado(val):
+    if val == "Pagado":
+        return 'background-color: #d4edda; color: #155724'  # Verde claro
+    elif val == "Sin pagar":
+        return 'background-color: #f8d7da; color: #721c24'  # Rojo claro
+    else:
+        return ''
