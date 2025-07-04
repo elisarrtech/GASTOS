@@ -51,7 +51,7 @@ with st.sidebar:
     quincena_filtro = st.selectbox("Quincena", ["Todas"] + sorted(df["Quincena"].unique()))
     variacion_filtro = st.selectbox("Variación", ["Todos", "Positiva", "Negativa"])
 
-    busqueda_rapida = st.text_input("🔍 Búsqueda rápida por concepto")st.selectbox("Variación", ["Todos", "Positiva", "Negativa"])
+    busqueda_rapida = st.text_input("🔍 Búsqueda rápida por concepto")
 
 
 
