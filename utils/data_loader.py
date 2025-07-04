@@ -9,4 +9,3 @@ def limpiar_monto(valor):
 def cargar_datos(ruta_csv):
     df = pd.read_csv(ruta_csv)
     return df
-
