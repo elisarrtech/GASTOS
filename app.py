@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 
 # Configuración
 st.set_page_config(page_title="Dashboard de Gastos", layout="wide")
@@ -17,19 +18,36 @@ def cargar_datos():
         st.error(f"Error al cargar los datos: {e}")
         return None
 
+# --- Limpiar y convertir montos a números ---
+def limpiar_montos(df):
+    meses = ['Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+    for mes in meses:
+        df[mes] = df[mes].str.replace('[,$]', '', regex=True).astype(float)
+    return df
+
 # --- Cargar datos ---
 df = cargar_datos()
 
-if df is not None:
+if df is not None and not df.empty:
     st.success("Datos cargados correctamente.")
 
     # Mostrar resumen rápido
     st.markdown("### 📋 Resumen General")
     st.write(f"- **Total de conceptos:** {len(df)}")
 
-    # Mostrar DataFrame completo para depuración
-    st.markdown("### 📄 Datos cargados")
-    st.dataframe(df, use_container_width=True)
+    # Limpiar montos para poder operar con ellos
+    df_clean = limpiar_montos(df.copy())
+
+    # Calcular total por categoría
+    st.markdown("### 🧮 Totales por categoría")
+    df_total_categoria = df_clean.groupby('Categoría')[['Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']].sum()
+    st.dataframe(df_total_categoria, use_container_width=True)
+
+    # Gráfico de barras
+    st.markdown("### 📊 Total de gastos por categoría")
+    df_total_categoria['Total'] = df_total_categoria.sum(axis=1)
+    fig = px.bar(df_total_categoria.reset_index(), x='Categoría', y='Total', text_auto=True)
+    st.plotly_chart(fig, use_container_width=True)
 
     # Mostrar datos por categoría
     if 'Categoría' in df.columns:
@@ -46,4 +64,4 @@ if df is not None:
             st.dataframe(edited_df)
 
 else:
-    st.warning("No se pudieron cargar los datos.")
+    st.warning("No se pudieron cargar los datos o el archivo está vacío.")
