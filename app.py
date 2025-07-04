@@ -39,11 +39,6 @@ def colorear_variacion(val):
 # === INTERFAZ ===
 st.title("📊 Dashboard de Gastos Mensuales")
 
-# Verificar si se debe reiniciar filtros
-if st.session_state.get("__rerun__"):
-    for key in ["__rerun__"] + ["Categoria", "Mes", "Estado", "Quincena", "Variacion"]:
-        st.session_state.pop(key, None)
-
 # Cargar datos
 df = cargar_datos()
 df["Variación (%)"] = df.apply(calcular_variacion, axis=1)
@@ -54,15 +49,8 @@ with st.sidebar:
     mes_filtro = st.selectbox("Mes", ["Todos"] + sorted(df["Mes"].unique()))
     estado_filtro = st.selectbox("Estado", ["Todos"] + sorted(df["Estado"].unique()))
     quincena_filtro = st.selectbox("Quincena", ["Todas"] + sorted(df["Quincena"].unique()))
-    variacionif st.button("🔄 Restablecer Filtros"):
-    st.session_state.clear()
-    st.success("✔️ Filtros restablecidos. Por favor recarga la página (F5 o Ctrl+R).")
+    variacion_filtro = st.selectbox("Variación", ["Todos", "Positiva", "Negativa"])
 
-_filtro = st.selectbox("Variación", ["Todos", "Positiva", "Negativa"])
-
-    if st.button("🔄 Restablecer Filtros"):
-    st.session_state.clear()
-    st.success("🔄 Filtros restablecidos. Por favor recarga la página manualmente (Ctrl + R).")
 
 
 # === TABS ===
