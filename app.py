@@ -115,6 +115,10 @@ col1.metric("💸 Total Anual", f"${total_anual:,.2f}")
 col2.metric("✅ Pagado", f"${total_pagado:,.2f}")
 col3.metric("⏳ No Pagado", f"${total_no_pagado:,.2f}")
 
+# === Tabla de Deudas Independiente ===
+st.subheader("💳 Tabla de Deudas Mensuales")
+st.dataframe(df_deudas, use_container_width=True)
+
 # Tabs
 principal, historico = st.tabs(["📊 Dashboard Principal", "📈 Histórico Mensual"])
 
