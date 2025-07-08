@@ -3,6 +3,17 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
+# === TABLA INDEPENDIENTE DE DEUDAS ===
+deudas = [
+    {"Concepto": "RENTA", "Monto": 300_000, "IVA": 0.16, "Total con IVA": 300_000 * 1.16},
+    {"Concepto": "HONORARIOS CONTADOR", "Monto": 200_000, "IVA": 0.16, "Total con IVA": 200_000 * 1.16},
+    {"Concepto": "LENIN", "Monto": 55_000, "IVA": 0.16, "Total con IVA": 55_000 * 1.16},
+]
+df_deudas = pd.DataFrame(deudas)
+df_deudas["Monto"] = df_deudas["Monto"].map("${:,.2f}".format)
+df_deudas["Total con IVA"] = df_deudas["Total con IVA"].map("${:,.2f}".format)
+df_deudas["IVA"] = "16%"
+
 # === FUNCIONES AUXILIARES ===
 def cargar_datos():
     df = pd.read_csv("data/gastos_mensuales.csv")
